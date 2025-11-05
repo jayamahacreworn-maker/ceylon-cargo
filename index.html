@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ceylon Cargo - Admin Panel</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        .printing-bw {
+            filter: grayscale(100%);
+        }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden">
+
+    <div id="login-container" class="fixed inset-0 bg-gray-900 z-50 flex items-center justify-center">
+        <div class="bg-gray-800 p-8 rounded-lg shadow-2xl w-full max-w-sm">
+            <div class="flex items-center justify-center text-white mb-6">
+                <img src="logo.jpg" alt="Ceylon Cargo Logo" class="w-48 h-auto rounded-md">
+            </div>
+            <h2 class="text-xl font-semibold text-center text-white mb-6">Admin Login</h2>
+            <form id="login-form">
+                <div class="mb-4">
+                    <label for="loginEmail" class="block text-sm font-medium text-gray-300 mb-2">Email</label>
+                    <input type="email" id="loginEmail" name="loginEmail" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div class="mb-6">
+                    <label for="loginPassword" class="block text-sm font-medium text-gray-300 mb-2">Password</label>
+                    <input type="password" id="loginPassword" name="loginPassword" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200">
+                    Login
+                </button>
+            </form>
+            <div id="login-error-message" class="mt-4 text-center text-red-400 text-sm"></div>
+        </div>
+    </div>
+    <div id="app-container" class="flex h-screen overflow-hidden w-full" style="display: none;">
+        <nav class="sidebar w-64 h-full bg-gray-800 shadow-lg overflow-y-auto flex-shrink-0">
+            <div class="p-5 sticky top-0 bg-gray-800 z-10">
+                <a href="#" class="flex items-center justify-center text-white">
+                    <img src="logo.jpg" alt="Ceylon Cargo Logo" class="w-40 h-auto rounded-md">
+                </a>
+            </div>
+
+            <ul class="flex flex-col p-4 space-y-2">
+                <li><a href="#" class="sidebar-link active flex items-center py-3 px-4 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200" data-target="dashboard"><i data-lucide="layout-dashboard" class="mr-3 w-5 h-5"></i><span>Dashboard</span></a></li>
+                <li><a href="#" class="sidebar-link flex items-center py-3 px-4 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200" data-target="add-boxes"><i data-lucide="package-plus" class="mr-3 w-5 h-5"></i><span>Add Boxes</span></a></li>
+                <li><a href="#" class="sidebar-link flex items-center py-3 px-4 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200" data-target="shippers-database"><i data-lucide="users" class="mr-3 w-5 h-5"></i><span>Shippers Data Base</span></a></li>
+                <li><a href="#" class="sidebar-link flex items-center py-3 px-4 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-2D" data-target="past-shipments"><i data-lucide="history" class="mr-3 w-5 h-5"></i><span>Past Shipments</span></a></li>
+                <li><a href="#" class="sidebar-link flex items-center py-3 px-4 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200" data-target="changes"><i data-lucide="file-pen-line" class="mr-3 w-5 h-5"></i><span>Changes</span></a></li>
+                
+                <li><a href="#" class="sidebar-link flex items-center py-3 px-4 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200" data-target="income-expenses"><i data-lucide="trending-up" class="mr-3 w-5 h-5"></i><span>Income & Expenses</span></a></li>
+           </ul>
+            <div class="p-4 mt-auto sticky bottom-0 bg-gray-800 z-10">
+                <div class="text-xs text-gray-500">
+                    Logged in as: <br>
+                    <span id="user-id" class="font-medium text-gray-300 break-words">Loading...</span>
+                </div>
+                <button id="logout-btn" class="w-full mt-3 text-sm bg-red-600 hover:bg-red-700 text-white py-2 px-3 rounded-lg">
+                    Logout
+                </button>
+            </div>
+        </nav>
+
+        <main id="main-content" class="main-content flex-1 h-full overflow-y-auto p-6 md:p-10">
+            </main>
+    </div>
+    <div id="add-box-modal" class="fixed inset-0 bg-black bg-opacity-70 z-50 justify-center hidden overflow-y-auto p-4">
+        <div class="bg-gray-800 p-8 rounded-lg shadow-lg max-w-3xl mx-auto w-full relative my-8">
+
+            <button id="add-box-modal-close-btn" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+
+            <h2 id="add-edit-modal-title" class="text-2xl font-bold mb-6 text-white">Add New Shipment / Box</h2>
+
+            <form id="add-box-form">
+                <input type="hidden" id="editDocId" name="editDocId">
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                    <div class="md:col-span-2">
+                        <label for="boxNo" class="block text-sm font-medium text-gray-300 mb-2">Box No. (Manual ID)</label>
+                        <input type="text" id="boxNo" name="boxNo" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div>
+                        <label for="quantity" class="block text-sm font-medium text-gray-300 mb-2">Quantity (Total)</label>
+                        <input type="number" id="quantity" name="quantity" value="1" min="1" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+
+                    <div>
+                        <label for="paymentStatus" class="block text-sm font-medium text-gray-300 mb-2">Payment Status</label>
+                        <select id="paymentStatus" name="paymentStatus" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                            <option value="Paid">Paid</option>
+                            <option value="Unpaid">Unpaid</option>
+                        </select>
+                    </div>
+                    <div id="payingDateContainer" class="md:col-span-2" style="display: none;">
+                        <label for="payingDate" class="block text-sm font-medium text-gray-300 mb-2">Paying Date</label>
+                        <input type="date" id="payingDate" name="payingDate" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" style="color-scheme: dark;">
+                    </div>
+                    <div class="md:col-span-3">
+                        <h3 class="text-lg font-semibold text-blue-400 mb-3 border-b border-gray-700 pb-2">Shipper Details</h3>
+                    </div>
+                    <div>
+                        <label for="shipperName" class="block text-sm font-medium text-gray-300 mb-2">Shipper's Name</label>
+                        <input type="text" id="shipperName" name="shipperName" list="shippers-list" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        <datalist id="shippers-list"></datalist>
+                    </div>
+                    <div>
+                        <label for="shipperEmail" class="block text-sm font-medium text-gray-300 mb-2">Shipper's Email</label>
+                        <input type="email" id="shipperEmail" name="shipperEmail" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div>
+                        <label for="shipperCity" class="block text-sm font-medium text-gray-300 mb-2">Shipper's City</label>
+                        <input type="text" id="shipperCity" name="shipperCity" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div class="md:col-span-3">
+                        <h3 class="text-lg font-semibold text-green-400 mb-3 border-b border-gray-700 pb-2">Receiver Details</h3>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="receiverName" class="block text-sm font-medium text-gray-300 mb-2">Receiver's Name</label>
+                        <input type="text" id="receiverName" name="receiverName" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div>
+                        <label for="receiverPhone" class="block text-sm font-medium text-gray-300 mb-2">Receiver's Phone No.</label>
+                        <input type="tel" id="receiverPhone" name="receiverPhone" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div class="md:col-span-3">
+                        <label for="receiverAddress" class="block text-sm font-medium text-gray-300 mb-2">Receiver's Address</label>
+                        <textarea id="receiverAddress" name="receiverAddress" rows="3" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" required></textarea>
+                    </div>
+
+                    <div class="md:col-span-3">
+                        <h3 class="text-lg font-semibold text-purple-400 mb-3 border-b border-gray-700 pb-2">Box Details (Individual)</h3>
+                        <div id="box-details-list" class="space-y-4 mb-3">
+                             <div class="box-row bg-gray-700 p-4 rounded-lg space-y-3" style="display: none;">
+                                <div class="flex justify-between items-center mb-2">
+                                    <p class="text-sm font-medium text-white">Box <span class="box-number"></span></p>
+                                    <button type="button" class="remove-box-btn text-red-500 hover:text-red-400">
+                                        <i data-lucide="trash-2" class="w-5 h-5 pointer-events-none"></i>
+                                    </button>
+                                </div>
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-300 mb-1">Length (cm)</label>
+                                        <input type="number" step="0.1" placeholder="L" class="box-length box-dimension w-full bg-gray-600 border border-gray-500 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"> </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-300 mb-1">Width (cm)</label>
+                                        <input type="number" step="0.1" placeholder="W" class="box-width box-dimension w-full bg-gray-600 border border-gray-500 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"> </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-300 mb-1">Height (cm)</label>
+                                        <input type="number" step="0.1" placeholder="H" class="box-height box-dimension w-full bg-gray-600 border border-gray-500 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"> </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-300 mb-1">Calculated Box Price (€)</label>
+                                        <span class="box-calculated-price block w-full bg-gray-600 border border-gray-500 text-gray-300 rounded-lg px-3 py-2 text-sm">€ 0.00</span>
+                                    </div>
+                                </div>
+                             </div>
+                            </div>
+                        <button type="button" id="add-new-box-btn" class="text-sm bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg flex items-center space-x-2">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                            <span>Add Box</span>
+                        </button>
+                    </div>
+                    <div class="md:col-span-3">
+                        <h3 class="text-lg font-semibold text-yellow-400 mb-3 border-b border-gray-700 pb-2">Other Objects</h3>
+                        <div id="other-objects-list" class="space-y-3 mb-3">
+                            <div class="object-row grid grid-cols-7 gap-3 items-center" style="display: none;">
+                                <input type="text" placeholder="Object Name" class="object-name col-span-4 w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"> <div class="col-span-2">
+                                    <label class="block text-xs font-medium text-gray-400 mb-1">Price (€)</label>
+                                    <input type="number" step="0.01" placeholder="0.00" class="object-price w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"> </div>
+                                <button type="button" class="remove-object-btn col-span-1 text-red-500 hover:text-red-400 justify-self-center mt-5">
+                                    <i data-lucide="trash-2" class="w-5 h-5 pointer-events-none"></i>
+                                </button>
+                            </div>
+                           </div>
+                        <button type="button" id="add-other-object-btn" class="text-sm bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg flex items-center space-x-2">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                            <span>Add Object</span>
+                        </button>
+                    </div>
+                    <div class="md:col-span-3">
+                        <label for="boxNotes" class="block text-sm font-medium text-gray-300 mb-2">Notes</label>
+                        <textarea id="boxNotes" name="boxNotes" rows="3" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    </div>
+                </div>
+
+                <div class="mt-8 pt-6 border-t border-gray-700 space-y-3">
+                    <div class="flex justify-end items-center">
+                        <span class="text-gray-400 text-sm mr-4">Calculated Subtotal:</span>
+                        <span id="calculated-subtotal-price" class="text-lg font-medium text-gray-300 w-32 text-right">€ 0.00</span>
+                    </div>
+                    <div class="flex justify-end items-center">
+                        <label for="discountPrice" class="text-gray-400 text-sm mr-4">Discount (€):</label>
+                        <input type="number" id="discountPrice" name="discountPrice" step="0.01" value="0" class="w-32 bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                    </div>
+                    <div class="flex justify-end items-center mt-2">
+                        <span class="text-gray-300 text-base font-bold mr-4">FINAL TOTAL:</span>
+                        <span id="calculated-total-price" class="text-2xl font-bold text-green-400 w-32 text-right">€ 0.00</span>
+                    </div>
+                </div>
+                <div class="mt-6 text-right">
+                    <button type="submit" id="add-edit-submit-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800">
+                        Add Entry
+                    </button>
+                </div>
+            </form>
+
+            <div id="form-message" class="mt-4 text-center"></div>
+        </div>
+    </div>
+    <div id="view-details-modal" class="fixed inset-0 bg-black bg-opacity-70 z-50 justify-center hidden overflow-y-auto p-4">
+        
+        <div id="view-details-content-panel" class="bg-gray-800 p-8 rounded-lg shadow-lg max-w-3xl mx-auto w-full relative my-8">
+             <button id="view-details-modal-close-btn" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+            <h2 class="text-2xl font-bold mb-6 text-white">Entry Details (<span id="details-box-no" class="font-mono"></span>)</h2>
+
+            <div class="space-y-6">
+                <section>
+                    <h3 class="text-lg font-semibold text-blue-400 mb-3 border-b border-gray-700 pb-2">Shipper Details</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div><strong class="text-gray-400">Name:</strong> <span id="details-shipper-name" class="text-white"></span></div>
+                        <div><strong class="text-gray-400">Email:</strong> <span id="details-shipper-email" class="text-white"></span></div>
+                        <div><strong class="text-gray-400">City:</strong> <span id="details-shipper-city" class="text-white"></span></div>
+                    </div>
+                </section>
+                <section>
+                    <h3 class="text-lg font-semibold text-green-400 mb-3 border-b border-gray-700 pb-2">Receiver Details</h3>
+                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mb-3">
+                        <div><strong class="text-gray-400">Name:</strong> <span id="details-receiver-name" class="text-white"></span></div>
+                        <div class="md:col-span-2"><strong class="text-gray-400">Phone:</strong> <span id="details-receiver-phone" class="text-white"></span></div>
+                    </div>
+                    <div><strong class="text-gray-400 block mb-1 text-sm">Address:</strong> <span id="details-receiver-address" class="text-white text-sm block bg-gray-700 p-2 rounded"></span></div>
+                </section>
+
+                 <section>
+                    <h3 class="text-lg font-semibold text-purple-400 mb-3 border-b border-gray-700 pb-2">Box Details (Individual)</h3>
+                    <div id="details-box-list" class="space-y-3">
+                        <p class="text-gray-400 text-sm">No individual box details added.</p>
+                    </div>
+                 </section>
+
+                 <section>
+                    <h3 class="text-lg font-semibold text-yellow-400 mb-3 border-b border-gray-700 pb-2">Other Objects</h3>
+                    <div id="details-object-list" class="space-y-2">
+                         <p class="text-gray-400 text-sm">No other objects added.</p>
+                    </div>
+                 </section>
+
+                 <section>
+                     <h3 class="text-lg font-semibold text-gray-400 mb-3 border-b border-gray-700 pb-2">Additional Info</h3>
+                      <div class="mb-3">
+                          <strong class="text-gray-400 block mb-1 text-sm">Notes:</strong>
+                          <span id="details-notes" class="text-white text-sm block bg-gray-700 p-2 rounded min-h-[50px]"></span>
+                     </div>
+                      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-400">
+                           <div><strong class="text-gray-500">Total Qty:</strong> <span id="details-quantity"></span></div>
+                           <div><strong class="text-gray-500">Added Date:</strong> <span id="details-added-at"></span></div>
+                           <div><strong class="text-gray-500">Added By:</strong> <span id="details-added-by"></span></div>
+                           <div><strong class="text-gray-500">Payment Status:</strong> <span id="details-payment-status" class="text-white"></span></div>
+                           <div><strong class="text-gray-500">Paying Date:</strong> <span id="details-paying-date" class="text-white"></span></div>
+                           
+                           <div id="details-saved-subtotal-price-container" class="md:col-span-3 mt-2"><strong class="text-gray-500">Subtotal:</strong> <span id="details-subtotal-price" class="text-gray-300 font-medium"></span></div>
+                           <div id="details-saved-discount-price-container" class="md:col-span-3"><strong class="text-gray-500">Discount:</strong> <span id="details-discount-price" class="text-yellow-400 font-medium"></span></div>
+                           <div id="details-saved-total-price-container" class="md:col-span-3"><strong class="text-gray-500">Final Total:</strong> <span id="details-total-price" class="text-green-400 font-semibold"></span></div>
+                           </div>
+                 </section>
+            </div>
+
+            <div id="details-modal-footer" class="mt-8 text-right flex justify-end items-center gap-4">
+                 
+                 <button id="download-slip-no-price-btn" class="bg-gray-600 hover:bg-gray-500 text-white font-medium py-2.5 px-6 rounded-lg transition-colors duration-200 flex items-center space-x-2">
+                    <i data-lucide="download" class="w-5 h-5"></i>
+                    <span>Download (No Price)</span>
+                </button>
+                
+                 <button id="download-slip-pdf-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-6 rounded-lg transition-colors duration-200 flex items-center space-x-2">
+                    <i data-lucide="download" class="w-5 h-5"></i>
+                    <span>Download Slip</span>
+                </button>
+                 <button id="view-details-modal-close-btn-bottom" class="bg-gray-600 hover:bg-gray-500 text-white font-medium py-2.5 px-6 rounded-lg transition-colors duration-200">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="add-transaction-modal" class="fixed inset-0 bg-black bg-opacity-70 z-50 justify-center hidden overflow-y-auto p-4">
+        <div class="bg-gray-800 p-8 rounded-lg shadow-lg max-w-lg mx-auto w-full relative my-8">
+            <button id="add-transaction-modal-close-btn" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+            <h2 class="text-2xl font-bold mb-6 text-white">Add New Transaction</h2>
+            
+            <form id="add-transaction-form">
+                <input type="hidden" id="editTransactionId">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="transactionType" class="block text-sm font-medium text-gray-300 mb-2">Type</label>
+                        <select id="transactionType" name="transactionType" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                            <option value="Expense">Expense</option>
+                            <option value="Income">Income</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="transactionDate" class="block text-sm font-medium text-gray-300 mb-2">Date</label>
+                        <input type="date" id="transactionDate" name="transactionDate" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" style="color-scheme: dark;" required>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="transactionDescription" class="block text-sm font-medium text-gray-300 mb-2">Description</label>
+                        <input type="text" id="transactionDescription" name="transactionDescription" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div>
+                        <label for="transactionCategory" class="block text-sm font-medium text-gray-300 mb-2">Category</label>
+                        <input type="text" id="transactionCategory" name="transactionCategory" placeholder="e.g., Salary, Vehicle, Shipment" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div>
+                        <label for="transactionAmount" class="block text-sm font-medium text-gray-300 mb-2">Amount (€)</label>
+                        <input type="number" step="0.01" id="transactionAmount" name="transactionAmount" placeholder="0.00" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="transactionPaymentMethod" class="block text-sm font-medium text-gray-300 mb-2">Payment Method</label>
+                        <input type="text" id="transactionPaymentMethod" name="transactionPaymentMethod" placeholder="e.g., Bank Payment, Cash" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+                <div class="mt-8 text-right">
+                    <button type="submit" id="add-transaction-submit-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200">
+                        Save Transaction
+                    </button>
+                </div>
+            </form>
+            <div id="transaction-form-message" class="mt-4 text-center"></div>
+        </div>
+    </div>
+
+    <div id="custom-alert-modal" class="fixed inset-0 bg-black bg-opacity-70 z-50 items-center justify-center hidden">
+        <div class="bg-gray-800 rounded-lg shadow-2xl p-6 max-w-sm mx-auto mt-20 text-center">
+            <h3 id="custom-alert-title" class="text-lg font-medium text-white mb-4">Message</h3>
+            <p id="custom-alert-message" class="text-gray-300 mb-6"></p>
+            <button id="custom-alert-close" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-5 rounded-lg transition-colors duration-200">
+                OK
+            </button>
+        </div>
+    </div>
+
+    <img id="invoice-logo" src="logo.jpg" style="display: none;">
+
+    <script type="module" src="app.js"></script>
+
+    <script>
+        // Self-contained alert functions to use the app's modal
+        const showAlert = (title, message) => {
+            const modal = document.getElementById('custom-alert-modal');
+            const titleEl = document.getElementById('custom-alert-title');
+            const messageEl = document.getElementById('custom-alert-message');
+            if (modal && titleEl && messageEl) {
+                titleEl.innerText = title;
+                messageEl.innerText = message;
+                modal.style.display = 'flex';
+            } else {
+                alert(title + "\\n\\n" + message); // Fallback
+            }
+        };
+        const hideAlert = () => {
+            const modal = document.getElementById('custom-alert-modal');
+            if (modal) modal.style.display = 'none';
+        };
+
+        // *** THIS ENTIRE FUNCTION IS REPLACED ***
+
+        /**
+         * NEW PDF MANIFEST FUNCTION (PORTRAIT A4)
+         * This function sets up the PDF generation logic for the shipment details page.
+         * It is defined here (index.html) and called by app.js when the page loads.
+         * @param {string} shipmentId - The ID of the current shipment for the file name.
+         * @param {object} shipmentData - The full shipment data object from Firestore (passed from app.js).
+         */
+        function setupShipmentPDF(shipmentId, shipmentData) {
+            const downloadBtn = document.getElementById('download-shipment-pdf-btn');
+
+            if (!downloadBtn) {
+                console.error('Shipment PDF button not found');
+                return;
+            }
+
+            // Replace the button's click handler with our new manifest generator
+            downloadBtn.onclick = () => {
+                // Check if libraries are loaded
+                if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF !== 'function' || typeof (new window.jspdf.jsPDF()).autoTable !== 'function') {
+                    showAlert('Error', 'PDF/autoTable libraries not loaded. Please check index.html.');
+                    return;
+                }
+
+                if (!shipmentData || !shipmentData.entries) {
+                    showAlert('Error', 'No shipment data or entries found to generate PDF.');
+                    return;
+                }
+
+                showAlert('Generating PDF...', 'Please wait, building shipment manifest.');
+
+                try {
+                    const { jsPDF } = window.jspdf;
+                    // 'p' = portrait (දිග අතට), 'mm' = millimeters, 'a4' = paper size
+                    const doc = new jsPDF('p', 'mm', 'a4'); 
+                    
+                    const entries = shipmentData.entries || [];
+                    
+                    // --- 1. Define Columns (ALUTH WENASKAMA MEKE) ---
+                    const tableColumn = [
+                        "Box No",      // 1. Box No
+                        "Shipper",     // 2. Shipper Data
+                        "Receiver",    // 3. Receiver Data
+                        "Packages",    // 4. Total boxes and objects
+                        "Notes",       // 5. ALUTH COLUMN EKA
+                        "Signature"    // 6. Sign karanna
+                    ];
+                    // --- WENASKAMA IWARAI ---
+                    
+                    
+                    // --- 2. Prepare Rows (data ටික හදනවා) ---
+                    const tableRows = [];
+
+                    entries.forEach(entry => {
+                        const boxNo = entry.boxNo || 'N/A';
+                        
+                        // Shipper Column
+                        const shipperData = [
+                            entry.shipperName || 'N/A',
+                            entry.shipperCity || '' 
+                        ].filter(Boolean).join('\n'); // නමයි, city එකයි
+                        
+                        // Receiver Column
+                        const receiverData = [
+                            entry.receiverName || 'N/A',
+                            entry.receiverAddress || '',
+                            entry.receiverPhone || ''
+                        ].filter(Boolean).join('\n'); // නම, address, phone
+                        
+                        // Package Column (Box ගානයි, object නම් ටිකයි)
+                        let packageDetails = `Boxes: ${entry.quantity || 0}`;
+                        if (entry.otherObjects && entry.otherObjects.length > 0) {
+                            const objectNames = entry.otherObjects.map(o => o.name || 'Object').join(', ');
+                            packageDetails += `\nObjects: ${objectNames}`;
+                        }
+                        
+                        // --- ALUTH WENASKAMA MEKE ---
+                        // "Add Boxes" modal eken gaththa notes
+                        const notes = entry.notes || ''; 
+                        // --- WENASKAMA IWARAI ---
+                        
+                        const signature = ""; // අත්සන් කරන්න හිස් තැන
+
+                        // --- ALUTH WENASKAMA MEKE ---
+                        tableRows.push([
+                            boxNo,
+                            shipperData,
+                            receiverData,
+                            packageDetails,
+                            notes,      // <-- Notes data eka mehema add kala
+                            signature
+                        ]);
+                        // --- WENASKAMA IWARAI ---
+                    });
+                    
+                    // --- 3. Add Title and Summary (Portrait Mode) ---
+                    
+                    // --- LOGO EKLEME ---
+                    const logoImg = document.getElementById('invoice-logo');
+                    if (logoImg) {
+                        try {
+                            doc.addImage(logoImg, 'JPEG', 14, 15, 50, 20); // Logo eka damma (Y=15, Height=20)
+                        } catch (e) {
+                            console.error("PDF Logo Error: ", e);
+                        }
+                    }
+                    // --- WENASKAMA IWARAI ---
+
+                    doc.setFontSize(18);
+                    doc.text('Shipment Manifest', 105, 22, { align: 'center' }); // Centered title
+                    doc.setFontSize(11);
+                    
+                    let summaryDate = 'N/A';
+                    if (shipmentData.endedAt?.toDate) {
+                        summaryDate = shipmentData.endedAt.toDate().toLocaleString('si-LK');
+                    } else if (shipmentData.endedAt?.seconds) {
+                        summaryDate = new Date(shipmentData.endedAt.seconds * 1000).toLocaleString('si-LK');
+                    }
+                    
+                    doc.text(`Shipment ID: ${shipmentId}`, 14, 40); // Y eka 30 indan 40 ta maru kala
+                    doc.text(`Total Entries: ${shipmentData.entryCount || 0}`, 196, 40, { align: 'right' }); // Y eka 30 indan 40 ta maru kala
+                    doc.text(`Ended Date: ${summaryDate}`, 14, 46); // Y eka 36 indan 46 ta maru kala
+
+
+                    // --- 4. Generate Table (ALUTH WENASKAMA MEKE) ---
+                    doc.autoTable({
+                        head: [tableColumn],
+                        body: tableRows,
+                        startY: 52, // Table eka Y=42 indan 52 ta maru kala
+                        theme: 'grid',
+                        headStyles: { 
+                            fillColor: [44, 62, 80], // Dark blue
+                            fontSize: 10 
+                        },
+                        styles: {
+                            fontSize: 9,
+                            cellPadding: 2,
+                            valign: 'top' // උඩ ඉඳන් align වෙන්න
+                        },
+                        // Column පළල Portrait A4 එකට (Approx 190mm usable width)
+                        // Aluth "Notes" column ekata ida hadanna anith ewa adjust kala
+                        columnStyles: {
+                            0: { cellWidth: 15 },  // Box No
+                            1: { cellWidth: 40 },  // Shipper (45 indan adu kala)
+                            2: { cellWidth: 55 },  // Receiver (65 indan adu kala)
+                            3: { cellWidth: 30 },  // Packages (40 indan adu kala)
+                            4: { cellWidth: 30 },  // Notes (ALUTH COLUMN EKA)
+                            5: { cellWidth: 20 }   // Signature (25 indan adu kala)
+                            // Total: 15 + 40 + 55 + 30 + 30 + 20 = 190mm
+                        }
+                    });
+                    // --- WENASKAMA IWARAI ---
+                    
+                    // **** PDF VIEW WENNA HADAPU WENASKAMA ****
+                    // doc.save(`Shipment-Manifest-${shipmentId}.pdf`); // Párana code eka
+                    doc.output('dataurlnewwindow'); // Aluth code eka
+                    // **** WENASKAMA IWARAI ****
+
+                    hideAlert();
+
+                } catch (e) {
+                    console.error('Error generating manifest PDF:', e);
+                    hideAlert();
+                    showAlert('Error', 'Failed to generate PDF: ' + e.message);
+                }
+            };
+        }
+        
+        // Make this function globally accessible so app.js can call it
+        window.setupShipmentPDF = setupShipmentPDF;
+
+    </script>
+</body>
+</html>

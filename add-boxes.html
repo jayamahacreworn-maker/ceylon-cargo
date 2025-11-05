@@ -1,0 +1,96 @@
+<div class="flex justify-between items-center mb-8">
+    <h1 class="text-3xl font-bold">All Added Entries</h1>
+    <div class="flex space-x-4"> <button id="show-add-box-modal-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-6 rounded-lg transition-colors duration-200 flex items-center space-x-2">
+            <i data-lucide="package-plus" class="w-5 h-5"></i>
+            <span>Add New Entry</span>
+        </button>
+        <button id="end-all-entries-btn" class="bg-red-600 hover:bg-red-700 text-white font-medium py-2.5 px-6 rounded-lg transition-colors duration-200 flex items-center space-x-2">
+            <i data-lucide="archive" class="w-5 h-5"></i>
+            <span>End of Entries</span>
+        </button>
+        </div>
+</div>
+
+<div class="bg-gray-800 p-6 rounded-lg shadow-lg mb-6">
+    <h3 class="text-lg font-semibold mb-4 text-gray-300">Loading Plan Status</h3>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+        <div>
+            <label for="container-select-dropdown" class="block text-sm font-medium text-gray-400 mb-1">Select Active Container</label>
+            <select id="container-select-dropdown" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">-- Select a container --</option>
+                </select>
+        </div>
+        <div class="md:col-span-2">
+            <div class="flex justify-between items-center text-sm text-gray-400 mb-1">
+                <span>Container Usage</span>
+                <span>
+                    Box Volume: <strong id="total-box-volume-display" class="text-white">0.00</strong> CBM
+                    /
+                    Container: <strong id="container-volume-display" class="text-white">N/A</strong> CBM
+                </span>
+            </div>
+            <div class="w-full bg-gray-700 rounded-full h-4">
+                <div id="container-fill-bar" class="bg-blue-600 h-4 rounded-full text-xs font-medium text-blue-100 text-center p-0.5 leading-none transition-all duration-300" style="width: 0%">
+                    <span id="container-fill-percentage">0%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="bg-gray-800 p-6 rounded-lg shadow-lg mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+        <div>
+            <label for="filterCustomerName" class="block text-sm font-medium text-gray-400 mb-1">Search by Shipper Name</label>
+            <input type="text" id="filterCustomerName" placeholder="Enter shipper name..." class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div>
+            <label for="filterBoxNo" class="block text-sm font-medium text-gray-400 mb-1">Search by Box No (Manual)</label>
+            <input type="text" id="filterBoxNo" placeholder="Enter manual box no..." class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div>
+            <label for="filterDate" class="block text-sm font-medium text-gray-400 mb-1">Filter by Date Added</label>
+            <input type="date" id="filterDate" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" style="color-scheme: dark;">
+        </div>
+        <div>
+            <label for="filterPaymentStatus" class="block text-sm font-medium text-gray-400 mb-1">Payment Status</label>
+            <select id="filterPaymentStatus" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="All">All</option>
+                <option value="Paid">Paid</option>
+                <option value="Unpaid">Unpaid</option>
+            </select>
+        </div>
+        <div>
+            <label for="filterPayingDate" class="block text-sm font-medium text-gray-400 mb-1">Filter by Paying Date</label>
+            <input type="date" id="filterPayingDate" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" style="color-scheme: dark;">
+        </div>
+        <div class="self-end">
+            <button id="filterClearBtn" class="w-full bg-gray-600 hover:bg-gray-500 text-white font-medium py-2.5 px-4 rounded-lg text-sm transition-colors duration-200">
+                Clear
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full min-w-full divide-y divide-gray-700">
+            <thead class="bg-gray-700">
+                <tr>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Box No.</th>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Shipper</th>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Receiver</th>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Qty</th>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Date Added</th>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Payment Status</th>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Paying Date</th>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider w-28">Actions</th> 
+                </tr>
+            </thead>
+            <tbody id="boxes-table-body" class="divide-y divide-gray-700">
+                <tr>
+                    <td colspan="8" class="px-6 py-10 text-center text-gray-400">Loading entries...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>

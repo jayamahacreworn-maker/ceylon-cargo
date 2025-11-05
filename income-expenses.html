@@ -1,0 +1,104 @@
+<div class="flex justify-between items-center mb-8">
+    <h1 class="text-3xl font-bold">Income & Expenses</h1>
+    <button id="add-transaction-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-6 rounded-lg transition-colors duration-200 flex items-center space-x-2">
+        <i data-lucide="plus" class="w-5 h-5"></i>
+        <span>Add Transaction</span>
+    </button>
+</div>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+        <div class="flex items-center space-x-4">
+            <div class="bg-green-600 p-3 rounded-full">
+                <i data-lucide="arrow-up-circle" class="text-white w-6 h-6"></i>
+            </div>
+            <div>
+                <p id="summary-month-title-1" class="text-sm text-gray-400">Total Income (Loading...)</p>
+                <p class="text-2xl font-bold" id="summary-income">€ 0.00</p>
+            </div>
+        </div>
+    </div>
+    <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+        <div class="flex items-center space-x-4">
+            <div class="bg-red-600 p-3 rounded-full">
+                <i data-lucide="arrow-down-circle" class="text-white w-6 h-6"></i>
+            </div>
+            <div>
+                <p id="summary-month-title-2" class="text-sm text-gray-400">Total Expenses (Loading...)</p>
+                <p class="text-2xl font-bold" id="summary-expenses">€ 0.00</p>
+            </div>
+        </div>
+    </div>
+    <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+        <div class="flex items-center space-x-4">
+            <div class="bg-blue-600 p-3 rounded-full">
+                <i data-lucide="pie-chart" class="text-white w-6 h-6"></i>
+            </div>
+            <div>
+                <p id="summary-month-title-3" class="text-sm text-gray-400">Profit (Loading...)</p>
+                <p class="text-2xl font-bold" id="summary-profit">€ 0.00</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-10 bg-gray-800 p-6 rounded-lg shadow-lg">
+    <h2 class="text-xl font-semibold mb-4">Monthly Overview (Full Year)</h2>
+    <div class="h-80">
+        <canvas id="income-expense-chart"></canvas>
+    </div>
+</div>
+
+<div class="bg-gray-800 p-6 rounded-lg shadow-lg mb-6 mt-10">
+    <h3 class="text-lg font-semibold mb-4 text-gray-300">Filter Transactions</h3>
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div>
+            <label for="filter-month" class="block text-sm font-medium text-gray-400 mb-1">Filter by Month</label>
+            <input type="month" id="filter-month" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" style="color-scheme: dark;">
+        </div>
+        <div>
+            <label for="filter-type" class="block text-sm font-medium text-gray-400 mb-1">Filter by Type</label>
+            <select id="filter-type" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="All">All Types</option>
+                <option value="Income">Income</option>
+                <option value="Expense">Expense</option>
+            </select>
+        </div>
+        <div>
+            <label for="filter-category" class="block text-sm font-medium text-gray-400 mb-1">Filter by Category</label>
+            <input type="text" id="filter-category" placeholder="e.g., Salary, Vehicle" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div>
+            <label for="filter-date" class="block text-sm font-medium text-gray-400 mb-1">Filter by Date (Overrides Month)</label>
+            <input type="date" id="filter-date" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" style="color-scheme: dark;">
+        </div>
+        <div class="self-end">
+            <button id="filter-clear-btn" class="w-full bg-gray-600 hover:bg-gray-500 text-white font-medium py-2.5 px-4 rounded-lg text-sm transition-colors duration-200">
+                Clear Filters
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full min-w-full divide-y divide-gray-700">
+            <thead class="bg-gray-700">
+                <tr>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Date</th>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Description</th>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Category</th>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Payment Method</th>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Type</th>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Amount (€)</th>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider w-28">Actions</th> 
+                </tr>
+            </thead>
+            <tbody id="transactions-table-body" class="divide-y divide-gray-700">
+                <tr>
+                    <td colspan="7" class="px-6 py-10 text-center text-gray-400">Loading transactions...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>

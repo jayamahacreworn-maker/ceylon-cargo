@@ -1,0 +1,82 @@
+<h1 class="text-3xl font-bold mb-8">Dashboard</h1>
+            
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+        <div class="flex items-center space-x-4">
+            <div class="bg-blue-600 p-3 rounded-full">
+                <i data-lucide="package" class="text-white w-6 h-6"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-400">Total Boxes (Current)</p>
+                <p class="text-2xl font-bold" id="dashboard-total-boxes">0</p>
+            </div>
+        </div>
+    </div>
+    <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+        <div class="flex items-center space-x-4">
+            <div class="bg-green-600 p-3 rounded-full">
+                <i data-lucide="truck" class="text-white w-6 h-6"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-400">Past Shipments</p>
+                <p class="text-2xl font-bold" id="dashboard-active-shipments">0</p>
+            </div>
+        </div>
+    </div>
+    <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+        <div class="flex items-center space-x-4">
+            <div class="bg-yellow-500 p-3 rounded-full">
+                <i data-lucide="users" class="text-white w-6 h-6"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-400">Total Shippers</p>
+                <p class="text-2xl font-bold" id="dashboard-total-shippers">0</p>
+            </div>
+        </div>
+    </div>
+    <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+        <div class="flex items-center space-x-4">
+            <div class="bg-purple-600 p-3 rounded-full">
+                <i data-lucide="trending-up" class="text-white w-6 h-6"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-400">Profit (This Month)</p>
+                <p class="text-2xl font-bold" id="dashboard-total-income">€ 0.00</p> 
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="bg-gray-800 p-6 rounded-lg shadow-lg mt-10">
+    <h3 class="text-lg font-semibold mb-4 text-gray-300">Loading Plan Status</h3>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+        <div>
+            <label for="container-select-dropdown" class="block text-sm font-medium text-gray-400 mb-1">Select Active Container</label>
+            <select id="container-select-dropdown" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">-- Select a container --</option>
+                </select>
+        </div>
+        <div class="md:col-span-2">
+            <div class="flex justify-between items-center text-sm text-gray-400 mb-1">
+                <span>Container Usage</span>
+                <span>
+                    Box Volume: <strong id="total-box-volume-display" class="text-white">0.00</strong> CBM
+                    /
+                    Container: <strong id="container-volume-display" class="text-white">N/A</strong> CBM
+                </span>
+            </div>
+            <div class="w-full bg-gray-700 rounded-full h-4">
+                <div id="container-fill-bar" class="bg-blue-600 h-4 rounded-full text-xs font-medium text-blue-100 text-center p-0.5 leading-none transition-all duration-300" style="width: 0%">
+                    <span id="container-fill-percentage">0%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-10 bg-gray-800 p-6 rounded-lg shadow-lg">
+    <h2 class="text-xl font-semibold mb-4">Monthly Overview (Full Year)</h2>
+    <div class="h-80">
+        <canvas id="income-expense-chart"></canvas>
+    </div>
+</div>

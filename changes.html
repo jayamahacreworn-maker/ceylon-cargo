@@ -1,0 +1,66 @@
+<h1 class="text-3xl font-bold mb-8">Change Settings</h1>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+    <div class="bg-gray-800 p-8 rounded-lg shadow-lg">
+        <h2 class="text-xl font-semibold mb-6">Price Per Cubic Meter (CBM)</h2>
+
+        <div class="mb-6">
+            <p class="text-sm text-gray-400">Current Price (€)</p>
+            <p id="current-cbm-price" class="text-3xl font-bold text-green-400">Loading...</p>
+        </div>
+
+        <form id="price-change-form">
+            <div>
+                <label for="newCbmPrice" class="block text-sm font-medium text-gray-300 mb-2">New Price per CBM (€)</label>
+                <input type="number" step="0.01" id="newCbmPrice" name="newCbmPrice" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+            </div>
+
+            <div class="mt-6 text-right">
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-6 rounded-lg transition-colors duration-200">
+                    Update Price
+                </button>
+            </div>
+        </form>
+        <div id="price-form-message" class="mt-4 text-center"></div>
+    </div>
+
+    <div class="bg-gray-800 p-8 rounded-lg shadow-lg">
+        <h2 class="text-xl font-semibold mb-6">Manage Container Types</h2>
+
+        <form id="container-change-form">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="md:col-span-2">
+                    <label for="containerName" class="block text-sm font-medium text-gray-300 mb-2">Container Name</label>
+                    <input type="text" id="containerName" name="containerName" placeholder="e.g., 20ft GP, 40ft HC" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div>
+                    <label for="containerLength" class="block text-sm font-medium text-gray-300 mb-2">Length (m)</label>
+                    <input type="number" step="0.01" id="containerLength" name="containerLength" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div>
+                    <label for="containerWidth" class="block text-sm font-medium text-gray-300 mb-2">Width (m)</label>
+                    <input type="number" step="0.01" id="containerWidth" name="containerWidth" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div class="md:col-span-2">
+                    <label for="containerHeight" class="block text-sm font-medium text-gray-300 mb-2">Height (m)</label>
+                    <input type="number" step="0.01" id="containerHeight" name="containerHeight" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+            </div>
+
+            <div class="mt-6 text-right">
+                <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 px-6 rounded-lg transition-colors duration-200">
+                    Save Container
+                </button>
+            </div>
+        </form>
+        <div id="container-form-message" class="mt-4 text-center"></div>
+    </div>
+    </div>
+
+<div class="mt-8 bg-gray-800 p-8 rounded-lg shadow-lg">
+    <h2 class="text-xl font-semibold mb-6">Saved Containers</h2>
+    <div id="saved-containers-list" class="space-y-4">
+        <p class="text-gray-400">Loading saved container types...</p>
+        </div>
+</div>

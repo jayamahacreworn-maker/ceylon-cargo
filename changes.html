@@ -3,28 +3,35 @@
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
     <div class="bg-gray-800 p-8 rounded-lg shadow-lg">
-        <h2 class="text-xl font-semibold mb-6">Price Per Cubic Meter (CBM)</h2>
+        <h2 class="text-xl font-semibold mb-6">Manage CBM Prices</h2>
 
-        <div class="mb-6">
-            <p class="text-sm text-gray-400">Current Price (€)</p>
-            <p id="current-cbm-price" class="text-3xl font-bold text-green-400">Loading...</p>
-        </div>
-
-        <form id="price-change-form">
-            <div>
-                <label for="newCbmPrice" class="block text-sm font-medium text-gray-300 mb-2">New Price per CBM (€)</label>
-                <input type="number" step="0.01" id="newCbmPrice" name="newCbmPrice" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+        <form id="cbm-price-form">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="md:col-span-2">
+                    <label for="cbmPriceName" class="block text-sm font-medium text-gray-300 mb-2">Price Name</label>
+                    <input type="text" id="cbmPriceName" name="cbmPriceName" placeholder="e.g., Standard Price, Promo 2024" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div>
+                    <label for="cbmPriceValue" class="block text-sm font-medium text-gray-300 mb-2">Price per CBM (€)</label>
+                    <input type="number" step="0.01" id="cbmPriceValue" name="cbmPriceValue" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
             </div>
 
             <div class="mt-6 text-right">
                 <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-6 rounded-lg transition-colors duration-200">
-                    Update Price
+                    Save CBM Price
                 </button>
             </div>
         </form>
-        <div id="price-form-message" class="mt-4 text-center"></div>
-    </div>
+        <div id="cbm-price-form-message" class="mt-4 text-center"></div>
 
+        <div class="mt-8 border-t border-gray-700 pt-6">
+            <h3 class="text-lg font-semibold mb-4">Saved CBM Prices</h3>
+            <div id="saved-cbm-prices-list" class="space-y-4">
+                <p class="text-gray-400">Loading saved CBM prices...</p>
+            </div>
+        </div>
+    </div>
     <div class="bg-gray-800 p-8 rounded-lg shadow-lg">
         <h2 class="text-xl font-semibold mb-6">Manage Container Types</h2>
 

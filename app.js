@@ -23,15 +23,17 @@ import {
     writeBatch
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyB1hvEa7vpizy1GKQvpZtK71ZH6brmi2Pg",
-  authDomain: "duminda-cargo-3a251.firebaseapp.com",
-  projectId: "duminda-cargo-3a251",
-  storageBucket: "duminda-cargo-3a251.firebasestorage.app",
-  messagingSenderId: "386286559963",
-  appId: "1:386286559963:web:9d1d78da4af55389dae2fe",
-  measurementId: "G-E38YJ3DZSZ"
+  apiKey: "AIzaSyAncJEHadZb3pkoCeZTf9RMUJW5OWr4O2w",
+  authDomain: "ravi-cargo-ad731.firebaseapp.com",
+  projectId: "ravi-cargo-ad731",
+  storageBucket: "ravi-cargo-ad731.firebasestorage.app",
+  messagingSenderId: "993400346851",
+  appId: "1:993400346851:web:4681d29ec1d779c69ecdd6",
+  measurementId: "G-C9HW3G4JCH"
 };
+
 
 const canvasFirebaseConfig = firebaseConfig;
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'duminda-cargo-app';
@@ -39,7 +41,7 @@ let auth, db, userId;
 
 let loginContainer, appContainer, mainContent;
 let allShippersData = [];
-let currentCBMPrice = 0;
+let legacyCBMPrice = 0; // Renamed for clarity, used as fallback
 let allTransactionsData = [];
 let currentTotalBoxCBM = 0;
 let incomeExpenseChart = null;
@@ -183,6 +185,10 @@ const calculateTotalPrice = () => {
     let totalBoxPrice = 0;
     let totalObjectPrice = 0;
 
+    // Get the *selected* CBM price from the new dropdown
+    const priceSelect = document.getElementById('cbm-price-select');
+    const selectedPrice = priceSelect ? (parseFloat(priceSelect.value) || 0) : 0;
+
     document.querySelectorAll('#box-details-list .box-row:not([style*="display: none"])').forEach((row, index) => {
         const lengthCm = parseFloat(row.querySelector('.box-length')?.value) || 0;
         const widthCm = parseFloat(row.querySelector('.box-width')?.value) || 0;
@@ -191,15 +197,20 @@ const calculateTotalPrice = () => {
 
         let calculatedBoxPrice = 0;
         if (lengthCm > 0 && widthCm > 0 && heightCm > 0) {
-             if (currentCBMPrice > 0) {
+             if (selectedPrice > 0) { // <-- Uses selectedPrice from dropdown
                  const lengthM = lengthCm / 100;
                  const widthM = widthCm / 100;
                  const heightM = heightCm / 100;
                  const volumeCBM = lengthM * widthM * heightM;
-                 calculatedBoxPrice = volumeCBM * currentCBMPrice;
+                 calculatedBoxPrice = volumeCBM * selectedPrice; // <-- Uses selectedPrice from dropdown
                  totalBoxPrice += calculatedBoxPrice;
              } else {
-                 console.warn(`[calculateTotalPrice] CBM Price is ${currentCBMPrice}, cannot calculate price for Box ${index+1}.`);
+                 // Warning is now more specific
+                 if (priceSelect && !priceSelect.value) {
+                     console.warn(`[calculateTotalPrice] No CBM price selected. Cannot calculate price for Box ${index+1}.`);
+                 } else {
+                     console.warn(`[calculateTotalPrice] Selected CBM Price is ${selectedPrice}, cannot calculate price for Box ${index+1}.`);
+                 }
              }
         }
 
@@ -311,18 +322,23 @@ const addNewBoxRow = (boxData = null, index = null) => {
     const heightInput = row.querySelector('.box-height');
     const priceDisplay = row.querySelector('.box-calculated-price');
 
+    // Get the *currently selected* CBM price from the dropdown for calculation
+    const priceSelect = document.getElementById('cbm-price-select');
+    const selectedPrice = priceSelect ? (parseFloat(priceSelect.value) || 0) : 0;
+
     if (boxData) {
         if(lengthInput) lengthInput.value = boxData.length || '';
         if(widthInput) widthInput.value = boxData.width || '';
         if(heightInput) heightInput.value = boxData.height || '';
 
          let calculatedBoxPrice = 0;
-         if (boxData.length > 0 && boxData.width > 0 && boxData.height > 0 && currentCBMPrice > 0) {
+         // Use the price from the dropdown (selectedPrice)
+         if (boxData.length > 0 && boxData.width > 0 && boxData.height > 0 && selectedPrice > 0) {
              const lengthM = boxData.length / 100;
              const widthM = boxData.width / 100;
              const heightM = boxData.height / 100;
              const volumeCBM = lengthM * widthM * heightM;
-             calculatedBoxPrice = volumeCBM * currentCBMPrice;
+             calculatedBoxPrice = volumeCBM * selectedPrice;
          }
          if (priceDisplay) priceDisplay.innerText = `€ ${calculatedBoxPrice.toFixed(2)}`;
     } else {
@@ -383,6 +399,8 @@ const openAddBoxModal = (isEditing = false) => {
         document.getElementById('add-new-box-btn')?.removeEventListener('click', addNewBoxRow);
         document.getElementById('shipperName')?.removeEventListener('input', handleShipperAutofill);
         document.getElementById('paymentStatus')?.removeEventListener('change', togglePayingDate);
+        // Remove listener for the new dropdown as well
+        document.getElementById('cbm-price-select')?.removeEventListener('change', calculateTotalPrice);
 
 
         if (isEditing) {
@@ -395,6 +413,10 @@ const openAddBoxModal = (isEditing = false) => {
              const boxList = document.getElementById('box-details-list');
              const objectList = document.getElementById('other-objects-list');
              const editIdField = document.getElementById('editDocId');
+             
+             // Clear hidden fields for past shipment editing
+             document.getElementById('editShipmentId').value = '';
+             document.getElementById('editShipmentIndex').value = '';
 
              const objTemplate = document.querySelector('#add-box-modal .object-row[style*="display: none"]');
              if(objectList) { objectList.innerHTML = ''; if(objTemplate) objectList.appendChild(objTemplate.cloneNode(true)); }
@@ -414,6 +436,8 @@ const openAddBoxModal = (isEditing = false) => {
         document.getElementById('add-new-box-btn')?.addEventListener('click', addNewBoxRow);
         document.getElementById('shipperName')?.addEventListener('input', handleShipperAutofill);
         document.getElementById('paymentStatus')?.addEventListener('change', togglePayingDate);
+        // Add listener for the new dropdown
+        document.getElementById('cbm-price-select')?.addEventListener('change', calculateTotalPrice);
         form.addEventListener('input', handleModalInputChange);
 
 
@@ -443,8 +467,18 @@ const closeAddBoxModal = () => {
          form.reset();
          form.removeEventListener('input', handleModalInputChange);
     }
+    
+    // --- ME TIKA WENAS KALE ---
     const editIdField = document.getElementById('editDocId');
     if(editIdField) editIdField.value = '';
+    
+    const editShipmentIdField = document.getElementById('editShipmentId');
+    if(editShipmentIdField) editShipmentIdField.value = '';
+    
+    const editShipmentIndexField = document.getElementById('editShipmentIndex');
+    if(editShipmentIndexField) editShipmentIndexField.value = '';
+    // --- WENAS KAMA IWARAI ---
+
 
     const objList = document.getElementById('other-objects-list');
     const boxList = document.getElementById('box-details-list');
@@ -458,6 +492,8 @@ const closeAddBoxModal = () => {
     document.getElementById('add-new-box-btn')?.removeEventListener('click', addNewBoxRow);
     document.getElementById('shipperName')?.removeEventListener('input', handleShipperAutofill);
     document.getElementById('paymentStatus')?.removeEventListener('change', togglePayingDate);
+    // Remove listener for the new dropdown
+    document.getElementById('cbm-price-select')?.removeEventListener('change', calculateTotalPrice);
 
     const dateFieldContainer = document.getElementById('payingDateContainer');
     if (dateFieldContainer) dateFieldContainer.style.display = 'none';
@@ -492,6 +528,33 @@ const populateEditForm = (boxData) => {
 
     form.discountPrice.value = boxData.discountAmount || 0;
 
+    // Set the CBM price dropdown
+    const cbmPriceSelect = document.getElementById('cbm-price-select');
+    if (cbmPriceSelect && boxData.cbmPriceUsed !== undefined) {
+        // Check if an option with this *value* exists
+        let matchingOption = Array.from(cbmPriceSelect.options).find(opt => parseFloat(opt.value) === boxData.cbmPriceUsed);
+        if (matchingOption) {
+            cbmPriceSelect.value = matchingOption.value;
+        } else {
+            // If the exact price isn't saved anymore, try to match by name
+            matchingOption = Array.from(cbmPriceSelect.options).find(opt => opt.text === boxData.cbmPriceName);
+            if (matchingOption) {
+                cbmPriceSelect.value = matchingOption.value;
+            } else {
+                // If still no match, add it as a temporary option
+                console.warn(`Saved CBM price (${boxData.cbmPriceName}: ${boxData.cbmPriceUsed}) not found in current price list. Adding it temporarily.`);
+                const tempOption = document.createElement('option');
+                tempOption.value = boxData.cbmPriceUsed;
+                tempOption.text = `${boxData.cbmPriceName || 'Saved Price'} (€ ${boxData.cbmPriceUsed.toFixed(2)})`;
+                tempOption.selected = true;
+                cbmPriceSelect.appendChild(tempOption);
+            }
+        }
+    } else if (cbmPriceSelect) {
+        cbmPriceSelect.value = ''; // Reset if no price was saved
+    }
+
+
     const boxList = document.getElementById('box-details-list');
     const objectList = document.getElementById('other-objects-list');
      const objTemplate = document.querySelector('#add-box-modal .object-row[style*="display: none"]');
@@ -501,6 +564,7 @@ const populateEditForm = (boxData) => {
 
 
     if (boxData.boxes && Array.isArray(boxData.boxes)) {
+        // Call addNewBoxRow *after* setting the CBM price dropdown
         boxData.boxes.forEach((box, index) => addNewBoxRow(box, index));
     }
 
@@ -583,17 +647,22 @@ const populateDetailsModal = (boxData) => {
     setText('details-payment-status', boxData.paymentStatus || 'N/A');
     setText('details-paying-date', boxData.payingDate || 'N/A');
 
+    // Get the price that was used when saving this entry
+    // Fallback to the legacy global price if it wasn't saved
+    const priceToUse = (boxData.cbmPriceUsed !== undefined) ? boxData.cbmPriceUsed : legacyCBMPrice;
+
     const boxListDiv = document.getElementById('details-box-list');
     if (boxListDiv) {
         if (boxData.boxes && boxData.boxes.length > 0) {
             boxListDiv.innerHTML = boxData.boxes.map((box, index) => {
                 let calculatedBoxPrice = 0;
-                 if (box.length > 0 && box.width > 0 && box.height > 0 && currentCBMPrice > 0) {
+                 // Use the saved price (priceToUse)
+                 if (box.length > 0 && box.width > 0 && box.height > 0 && priceToUse > 0) {
                      const lengthM = box.length / 100;
                      const widthM = box.width / 100;
                      const heightM = box.height / 100;
                      const volumeCBM = lengthM * widthM * heightM;
-                     calculatedBoxPrice = volumeCBM * currentCBMPrice;
+                     calculatedBoxPrice = volumeCBM * priceToUse; // <-- Uses priceToUse
                  }
                 return `
                     <div class="text-sm bg-gray-700 p-3 rounded grid grid-cols-2 gap-x-4">
@@ -693,7 +762,7 @@ async function loadContent(pageName) {
             loadShippersData();
         }
         else if (pageName === 'changes') {
-            await loadCurrentPrice();
+            await loadCbmPrices(); // <-- New function
             loadSavedContainers();
         }
         else if (pageName === 'add-boxes') {
@@ -785,7 +854,13 @@ async function handleAddBox(e) {
 
     const form = e.target;
     const messageDiv = document.getElementById('form-message');
+    
+    // --- ME TIKA WENAS KALE ---
     const editDocId = document.getElementById('editDocId').value;
+    const editShipmentId = document.getElementById('editShipmentId').value;
+    const editShipmentIndex = document.getElementById('editShipmentIndex').value;
+    // --- WENAS KAMA IWARAI ---
+
 
     const otherObjects = [];
     document.querySelectorAll('#other-objects-list .object-row:not([style*="display: none"])').forEach(row => {
@@ -819,6 +894,11 @@ async function handleAddBox(e) {
     const paymentStatus = form.paymentStatus.value;
     const payingDate = form.payingDate.value;
 
+    // Get the selected CBM price details
+    const priceSelect = document.getElementById('cbm-price-select');
+    const selectedPriceValue = priceSelect ? (parseFloat(priceSelect.value) || 0) : 0;
+    const selectedPriceName = priceSelect ? (priceSelect.options[priceSelect.selectedIndex]?.text || 'N/A') : 'N/A';
+
     const boxData = {
         boxNo: form.boxNo.value.trim(),
         quantity: parseInt(form.quantity.value) || 1,
@@ -835,6 +915,10 @@ async function handleAddBox(e) {
         subtotalPrice: parseFloat(subtotalPrice),
         discountAmount: parseFloat(discountPrice),
         totalCalculatedPrice: calculatedTotalPrice,
+
+        // Save the CBM price details
+        cbmPriceUsed: selectedPriceValue,
+        cbmPriceName: selectedPriceName, 
         
         paymentStatus: paymentStatus,
         payingDate: (paymentStatus === 'Unpaid' && payingDate) ? payingDate : null, 
@@ -842,7 +926,7 @@ async function handleAddBox(e) {
         lastUpdatedAt: Timestamp.fromDate(new Date())
     };
 
-    if (!editDocId) {
+    if (!editDocId && !editShipmentId) { // Aluth entry ekak nam vitharak
         boxData.addedAt = Timestamp.fromDate(new Date());
     }
 
@@ -851,58 +935,112 @@ async function handleAddBox(e) {
          return;
     }
 
+    // Check if CBM price is selected
+    if (selectedPriceValue <= 0) {
+        customAlert('Validation Error', 'Please select a valid CBM Price from the dropdown.');
+        return;
+    }
+
 
     try {
-        let docRefPath;
-        const shipperId = boxData.shipperEmail;
-        const receiverPhone = boxData.receiverPhone;
+        if (editShipmentId && editShipmentIndex !== undefined) {
+            // === LOGIC FOR PAST SHIPMENT EDIT ===
+            console.log(`Updating entry ${editShipmentIndex} in shipment ${editShipmentId}`);
+            
+            const shipmentDocRef = doc(db, `artifacts/${appId}/public/data/shipments`, editShipmentId);
+            const docSnap = await getDoc(shipmentDocRef);
+            
+            if (!docSnap.exists()) {
+                throw new Error("Shipment document not found. Could not update entry.");
+            }
 
-        if (editDocId) {
-            console.log("Updating document:", editDocId);
-            const boxDocRef = doc(db, `artifacts/${appId}/public/data/boxes`, editDocId);
-            await setDoc(boxDocRef, boxData, { merge: true });
+            const shipmentData = docSnap.data();
+            let entries = shipmentData.entries || [];
+            const index = parseInt(editShipmentIndex);
+            const originalEntry = entries[index] || {};
+            
+            // Update the entry in the array
+            // 'addedAt' vage parana fields preserve karanava
+            entries[index] = { 
+                ...originalEntry, // Parana details
+                ...boxData        // Aluth details (form eken)
+            }; 
 
-             const shipperRef = doc(db, `artifacts/${appId}/public/data/shippers`, shipperId);
-             await setDoc(shipperRef, { name: boxData.shipperName, email: shipperId, city: boxData.shipperCity }, { merge: true });
-
-             const receiverRef = doc(db, `artifacts/${appId}/public/data/shippers/${shipperId}/receivers`, receiverPhone);
-             await setDoc(receiverRef, { name: boxData.receiverName, address: boxData.receiverAddress, phone: receiverPhone }, { merge: true });
-
-            const shipperBoxRef = doc(db, `artifacts/${appId}/public/data/shippers/${shipperId}/shipment_entries`, editDocId);
-            await setDoc(shipperBoxRef, {
-                boxNo: boxData.boxNo,
-                addedAt: boxData.lastUpdatedAt,
-                totalPrice: boxData.totalCalculatedPrice
-            }, { merge: true });
-
-            if(messageDiv) messageDiv.innerText = 'Entry updated successfully!';
-
-        } else {
-             console.log("Adding new document...");
-            const boxesCollectionRef = collection(db, `artifacts/${appId}/public/data/boxes`);
-            const docRef = await addDoc(boxesCollectionRef, boxData);
-            const newBoxId = docRef.id;
-
-            const shipperRef = doc(db, `artifacts/${appId}/public/data/shippers`, shipperId);
-            await setDoc(shipperRef, { name: boxData.shipperName, email: shipperId, city: boxData.shipperCity, shipmentCount: increment(1) }, { merge: true });
-            console.log("Shipper data updated/created.");
-
-            const receiverRef = doc(db, `artifacts/${appId}/public/data/shippers/${shipperId}/receivers`, receiverPhone);
-            await setDoc(receiverRef, { name: boxData.receiverName, address: boxData.receiverAddress, phone: receiverPhone }, { merge: true });
-            console.log("Receiver data updated/created.");
-
-            const shipperBoxRef = doc(db, `artifacts/${appId}/public/data/shippers/${shipperId}/shipment_entries`, newBoxId);
-            await setDoc(shipperBoxRef, {
-                boxNo: boxData.boxNo,
-                addedAt: boxData.addedAt,
-                totalPrice: boxData.totalCalculatedPrice
+            // Shipment eke total price eka ayeth calculate karanava
+            let newTotalPrice = 0;
+            entries.forEach(entry => {
+                newTotalPrice += entry.totalCalculatedPrice || 0;
             });
 
-            if(messageDiv) messageDiv.innerText = 'Entry added successfully!';
-        }
+            // Shipment document eka update karanava
+            await setDoc(shipmentDocRef, {
+                entries: entries,
+                totalPrice: newTotalPrice,
+                lastUpdatedAt: Timestamp.fromDate(new Date())
+            }, { merge: true });
 
-        if(messageDiv) messageDiv.className = 'mt-4 text-center text-green-400';
-        closeAddBoxModal();
+            if (messageDiv) messageDiv.innerText = 'Entry updated successfully in shipment!';
+            closeAddBoxModal();
+            
+            // Details page eka refresh karanava
+            const updatedShipmentData = { ...shipmentData, entries: entries, totalPrice: newTotalPrice, lastUpdatedAt: Timestamp.fromDate(new Date()) };
+            renderShipmentDetails(updatedShipmentData, editShipmentId);
+            if (window.setupShipmentPDF) {
+                window.setupShipmentPDF(editShipmentId, updatedShipmentData);
+            }
+            
+        } else {
+            // === LOGIC FOR NEW OR LIVE-EDIT ENTRY ===
+            const shipperId = boxData.shipperEmail;
+            const receiverPhone = boxData.receiverPhone;
+
+            if (editDocId) {
+                // --- This is a LIVE EDIT ---
+                console.log("Updating document:", editDocId);
+                const boxDocRef = doc(db, `artifacts/${appId}/public/data/boxes`, editDocId);
+                await setDoc(boxDocRef, boxData, { merge: true });
+
+                const shipperRef = doc(db, `artifacts/${appId}/public/data/shippers`, shipperId);
+                await setDoc(shipperRef, { name: boxData.shipperName, email: shipperId, city: boxData.shipperCity }, { merge: true });
+
+                const receiverRef = doc(db, `artifacts/${appId}/public/data/shippers/${shipperId}/receivers`, receiverPhone);
+                await setDoc(receiverRef, { name: boxData.receiverName, address: boxData.receiverAddress, phone: receiverPhone }, { merge: true });
+
+                const shipperBoxRef = doc(db, `artifacts/${appId}/public/data/shippers/${shipperId}/shipment_entries`, editDocId);
+                await setDoc(shipperBoxRef, {
+                    boxNo: boxData.boxNo,
+                    addedAt: boxData.lastUpdatedAt,
+                    totalPrice: boxData.totalCalculatedPrice
+                }, { merge: true });
+                
+                if(messageDiv) messageDiv.innerText = 'Entry updated successfully!';
+
+            } else {
+                // --- This is a NEW ENTRY ---
+                console.log("Adding new document...");
+                const boxesCollectionRef = collection(db, `artifacts/${appId}/public/data/boxes`);
+                const docRef = await addDoc(boxesCollectionRef, boxData);
+                const newBoxId = docRef.id;
+
+                const shipperRef = doc(db, `artifacts/${appId}/public/data/shippers`, shipperId);
+                await setDoc(shipperRef, { name: boxData.shipperName, email: shipperId, city: boxData.shipperCity, shipmentCount: increment(1) }, { merge: true });
+
+                const receiverRef = doc(db, `artifacts/${appId}/public/data/shippers/${shipperId}/receivers`, receiverPhone);
+                await setDoc(receiverRef, { name: boxData.receiverName, address: boxData.receiverAddress, phone: receiverPhone }, { merge: true });
+
+                const shipperBoxRef = doc(db, `artifacts/${appId}/public/data/shippers/${shipperId}/shipment_entries`, newBoxId);
+                await setDoc(shipperBoxRef, {
+                    boxNo: boxData.boxNo,
+                    addedAt: boxData.addedAt,
+                    totalPrice: boxData.totalCalculatedPrice
+                });
+                
+                if(messageDiv) messageDiv.innerText = 'Entry added successfully!';
+            }
+            
+            if(messageDiv) messageDiv.className = 'mt-4 text-center text-green-400';
+            closeAddBoxModal();
+        }
 
     } catch (error) {
         console.error("Error saving document: ", error);
@@ -1087,68 +1225,143 @@ async function loadShipperShipmentsPage(shipperId, shipperName) {
     }
 }
 
-async function handlePriceChange(e) {
+// This function REPLACES the old handlePriceChange
+async function handleCbmPriceSave(e) {
     e.preventDefault();
     if (!db) return customAlert('Error', 'Database not connected.');
-    const newPriceInput = document.getElementById('newCbmPrice');
-    const messageDiv = document.getElementById('price-form-message');
-    if (!newPriceInput || !messageDiv) return;
-    const newPrice = parseFloat(newPriceInput.value);
-    if (isNaN(newPrice) || newPrice < 0) {
-        messageDiv.innerText = 'Please enter a valid price.';
+    
+    const form = e.target;
+    const messageDiv = document.getElementById('cbm-price-form-message');
+    if (!form || !messageDiv) return;
+
+    const priceName = form.cbmPriceName.value.trim();
+    const priceValue = parseFloat(form.cbmPriceValue.value);
+
+    if (!priceName || isNaN(priceValue) || priceValue < 0) {
+        messageDiv.innerText = 'Please enter a valid price name and a positive price value.';
         messageDiv.className = 'mt-4 text-center text-red-400';
         return;
     }
+    
+    // Create a docId from the name
+    const docId = priceName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    if (!docId) {
+        messageDiv.innerText = 'Please enter a valid price name.';
+        messageDiv.className = 'mt-4 text-center text-red-400';
+        return;
+    }
+
     try {
-        const priceDocRef = doc(db, `artifacts/${appId}/public/config/pricing/current`);
-        await setDoc(priceDocRef, { pricePerCBM: newPrice }, { merge: true });
-        messageDiv.innerText = 'Price updated successfully!';
+        const priceData = {
+            name: priceName,
+            price: priceValue
+        };
+        const priceDocRef = doc(db, `artifacts/${appId}/public/config/cbm_prices`, docId);
+        await setDoc(priceDocRef, priceData);
+        
+        messageDiv.innerText = 'CBM price saved successfully!';
         messageDiv.className = 'mt-4 text-center text-green-400';
-        await loadCurrentPrice();
+        form.reset();
+        
+        // Also update the legacy/default price doc just in case
+        // This makes the *last saved price* the new default for fallbacks
+        const legacyPriceDocRef = doc(db, `artifacts/${appId}/public/config/pricing/current`);
+        await setDoc(legacyPriceDocRef, { pricePerCBM: priceValue }, { merge: true });
+        legacyCBMPrice = priceValue; // Update global fallback
+
     } catch (error) {
-        console.error("Error updating price: ", error);
-        messageDiv.innerText = 'Error updating price.';
+        console.error("Error saving CBM price: ", error);
+        messageDiv.innerText = 'Error saving CBM price.';
         messageDiv.className = 'mt-4 text-center text-red-400';
     }
     setTimeout(() => { if (messageDiv) messageDiv.innerText = ''; }, 3000);
 }
 
-async function loadCurrentPrice() {
-    console.log("[loadCurrentPrice] Attempting to load price...");
+// This function REPLACES the old loadCurrentPrice
+async function loadCbmPrices() {
+    console.log("[loadCbmPrices] Attempting to load CBM prices...");
     if (!db) {
-         console.warn("[loadCurrentPrice] DB not ready.");
-         currentCBMPrice = 0;
-         return;
+        console.warn("[loadCbmPrices] DB not ready.");
+        legacyCBMPrice = 0;
+        return;
     }
-    const priceDisplay = document.getElementById('current-cbm-price');
-    const priceInput = document.getElementById('newCbmPrice');
+    
+    const listDiv = document.getElementById('saved-cbm-prices-list');
+    const modalSelect = document.getElementById('cbm-price-select');
 
+    // 1. Load the list of CBM prices from the new collection
     try {
-        const priceDocRef = doc(db, `artifacts/${appId}/public/config/pricing/current`);
-        const docSnap = await getDoc(priceDocRef);
+        const pricesCollectionRef = collection(db, `artifacts/${appId}/public/config/cbm_prices`);
+        const q = query(pricesCollectionRef);
+
+        onSnapshot(q, (snapshot) => {
+            console.log("[loadCbmPrices] Snapshot received for cbm_prices.");
+            if (listDiv) listDiv.innerHTML = ''; // Clear list on changes page
+            if (modalSelect) { // Clear and re-populate modal dropdown
+                modalSelect.innerHTML = '<option value="">-- Select a price --</option>';
+            }
+
+            if (snapshot.empty) {
+                if (listDiv) listDiv.innerHTML = `<p class="text-gray-400">No CBM prices saved yet.</p>`;
+            }
+
+            snapshot.forEach(doc => {
+                const priceData = doc.data();
+                const docId = doc.id;
+                
+                // 2a. Populate the list on the 'changes' page
+                if (listDiv) {
+                    const itemHTML = `
+                        <div class="flex items-center justify-between bg-gray-700 p-4 rounded-lg">
+                            <div>
+                                <p class="font-medium text-white">${priceData.name || 'N/A'}</p>
+                                <p class="text-sm text-green-400">€ ${priceData.price ? priceData.price.toFixed(2) : '0.00'}</p>
+                            </div>
+                            <button data-id="${docId}" class="delete-cbm-price-btn text-red-500 hover:text-red-400 p-1">
+                                <i data-lucide="trash-2" class="w-5 h-5 pointer-events-none"></i>
+                            </button>
+                        </div>
+                    `;
+                    listDiv.innerHTML += itemHTML;
+                }
+                
+                // 2b. Populate the dropdown in the 'add-box-modal'
+                if (modalSelect && priceData.price > 0) {
+                    const option = document.createElement('option');
+                    option.value = priceData.price.toFixed(2);
+                    option.text = `${priceData.name} (€ ${priceData.price.toFixed(2)})`;
+                    modalSelect.appendChild(option);
+                }
+            });
+
+            if (listDiv && window.lucide) {
+                try { lucide.createIcons(); } catch(e){ console.error("Lucide error:", e); }
+            }
+        }, (error) => {
+            console.error("[loadCbmPrices] Error loading CBM prices: ", error);
+            if (listDiv) listDiv.innerHTML = `<p class="text-red-400">Error loading CBM prices.</p>`;
+        });
+
+    } catch (error) {
+        console.error("[loadCbmPrices] Snapshot setup failed: ", error);
+    }
+
+    // 3. Load the legacy "current" price for fallback compatibility
+    try {
+        const legacyPriceDocRef = doc(db, `artifacts/${appId}/public/config/pricing/current`);
+        const docSnap = await getDoc(legacyPriceDocRef);
         if (docSnap.exists()) {
             const price = docSnap.data().pricePerCBM;
-            currentCBMPrice = (typeof price === 'number' && price >= 0) ? price : 0;
-            console.log("[loadCurrentPrice] CBM Price loaded from Firestore:", currentCBMPrice);
-
-            if (priceDisplay) priceDisplay.innerText = `€ ${currentCBMPrice.toFixed(2)}`;
-            if (priceInput && document.activeElement !== priceInput) {
-               priceInput.value = currentCBMPrice.toFixed(2);
-            }
+            legacyCBMPrice = (typeof price === 'number' && price >= 0) ? price : 0;
         } else {
-            console.warn("[loadCurrentPrice] Pricing document does not exist in Firestore. Setting price to 0.");
-            currentCBMPrice = 0;
-            if (priceDisplay) priceDisplay.innerText = '€ 0.00';
-             if (priceInput && document.activeElement !== priceInput) {
-                priceInput.value = '0.00';
-             }
+            console.warn("[loadCbmPrices] Legacy pricing document does not exist. Fallback price is 0.");
+            legacyCBMPrice = 0;
         }
     } catch (error) {
-        currentCBMPrice = 0;
-        console.error("[loadCurrentPrice] Error loading price: ", error);
-        if (priceDisplay) priceDisplay.innerText = 'Error';
+        legacyCBMPrice = 0;
+        console.error("[loadCbmPrices] Error loading legacy/fallback price: ", error);
     }
-     console.log("[loadCurrentPrice] Final currentCBMPrice value after attempt:", currentCBMPrice);
+    console.log("[loadCbmPrices] Global fallback (legacy) price set to:", legacyCBMPrice);
 }
 
 async function handleContainerChange(e) {
@@ -1247,6 +1460,23 @@ async function handleDeleteContainer(docId) {
     } catch (error) {
         console.error("Error deleting container: ", error);
         customAlert('Error', 'Failed to delete container.');
+    }
+}
+
+// --- ADD THIS NEW FUNCTION BELOW ---
+async function handleDeleteCbmPrice(docId) {
+    if (!db) return customAlert('Error', 'Database not connected.');
+    if (!confirm(`Are you sure you want to delete this CBM price (ID: ${docId})?`)) {
+        return;
+    }
+    customAlert('Deleting', 'Deleting CBM price...');
+    try {
+        const priceDocRef = doc(db, `artifacts/${appId}/public/config/cbm_prices`, docId);
+        await deleteDoc(priceDocRef);
+        customAlert('Success', 'CBM price deleted.');
+    } catch (error) {
+        console.error("Error deleting CBM price: ", error);
+        customAlert('Error', 'Failed to delete CBM price.');
     }
 }
 
@@ -1356,6 +1586,10 @@ async function handleGenerateSlipFromData(boxData, action = 'download', showPric
     }
     customAlert('Generating PDF...', 'Please wait, building slip...');
 
+    // Get the price that was used when saving this entry
+    // Fallback to the legacy global price if it wasn't saved
+    const priceToUse = (boxData.cbmPriceUsed !== undefined) ? boxData.cbmPriceUsed : legacyCBMPrice;
+
     try {
         
         const logoImg = document.getElementById('invoice-logo');
@@ -1364,11 +1598,11 @@ async function handleGenerateSlipFromData(boxData, action = 'download', showPric
                 doc.addImage(logoImg, 'JPEG', 14, 15, 50, 20); 
             } catch (e) {
                 console.error("PDF Logo Error: ", e);
-                doc.text('Ceylon Cargo', 20, 25); 
+                doc.text('Ravi Cargo', 20, 25); 
             }
         } else {
             console.warn("invoice-logo element not found");
-            doc.text('Ceylon Cargo', 20, 25); 
+            doc.text('Ravi Cargo', 20, 25); 
         }
         
         doc.setFont('helvetica', 'bold');
@@ -1378,7 +1612,7 @@ async function handleGenerateSlipFromData(boxData, action = 'download', showPric
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(10);
         
-        doc.text('Email: info@ceyloncargo.com', 14, 41); 
+        doc.text('Email: info@ravicargo.com', 14, 41); 
         doc.text('Phone: 324 093 4495', 14, 47); 
 
         doc.setFont('helvetica', 'bold');
@@ -1431,12 +1665,13 @@ async function handleGenerateSlipFromData(boxData, action = 'download', showPric
                 ];
                 if (showPrice) {
                     let calculatedBoxPrice = 0;
-                    if (box.length > 0 && box.width > 0 && box.height > 0 && currentCBMPrice > 0) {
+                    // Use the saved price (priceToUse)
+                    if (box.length > 0 && box.width > 0 && box.height > 0 && priceToUse > 0) {
                         const lengthM = box.length / 100;
                         const widthM = box.width / 100;
                         const heightM = box.height / 100;
                         const volumeCBM = lengthM * widthM * heightM;
-                        calculatedBoxPrice = volumeCBM * currentCBMPrice;
+                        calculatedBoxPrice = volumeCBM * priceToUse; // <-- Uses priceToUse
                     }
                     boxRow.push(`€ ${calculatedBoxPrice.toFixed(2)}`);
                 }
@@ -1784,7 +2019,13 @@ function filterBoxesTable() {
 const handleEndAllEntries = async () => {
     if (!db) return customAlert('Error', 'Database not connected.');
 
-    if (!confirm('Are you sure you want to end all active entries?\n\nThis will move ALL entries from the "All Added Entries" list to a new batch in "Past Shipments" and clear the current list. This action cannot be undone.')) {
+    const shipmentName = prompt('Please enter a name for this new shipment batch:', '');
+    if (!shipmentName) {
+        customAlert('Cancelled', 'Ending entries was cancelled.');
+        return;
+    }
+
+    if (!confirm(`Are you sure you want to end all active entries and move them to a new shipment named "${shipmentName}"?\n\nThis action cannot be undone.`)) {
         return;
     }
 
@@ -1817,6 +2058,7 @@ const handleEndAllEntries = async () => {
         });
 
         const newShipmentData = {
+            shipmentName: shipmentName, // <-- MEKAI ADD KALE
             endedAt: Timestamp.fromDate(new Date()),
             status: 'pending',
             totalPrice: totalShipmentPrice,
@@ -1834,7 +2076,7 @@ const handleEndAllEntries = async () => {
             const incomeData = {
                 type: "Income",
                 date: Timestamp.fromDate(new Date()),
-                description: `Shipment Batch - ${newShipmentId.substring(0, 8)}...`,
+                description: `Shipment Batch - ${shipmentName}`, // <-- MEKATH WENAS KALA
                 category: "Shipment",
                 amount: totalShipmentPrice,
                 paymentMethod: "N/A",
@@ -1848,7 +2090,7 @@ const handleEndAllEntries = async () => {
         }
 
         if (alertModal) alertModal.style.display = 'none';
-        customAlert('Success', `Successfully moved ${entryCount} entries to a new shipment in "Past Shipments".`);
+        customAlert('Success', `Successfully moved ${entryCount} entries to a new shipment named "${shipmentName}".`);
 
     } catch (error) {
         console.error("Error ending all entries: ", error);
@@ -1875,6 +2117,9 @@ function loadPastShipments() {
         snapshot.forEach(docSnap => {
             const shipment = docSnap.data();
             const shipmentId = docSnap.id;
+            
+            // <-- ME DEKA ADD KALE
+            const shipmentName = shipment.shipmentName || `Shipment ${shipmentId.substring(0, 6)}...`;
 
             let date = 'N/A';
             if (shipment.endedAt?.toDate) {
@@ -1893,7 +2138,12 @@ function loadPastShipments() {
 
             const row = `
                 <tr class="hover:bg-gray-700 transition-colors duration-150">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white shipment-details-trigger cursor-pointer" data-id="${shipmentId}">${date}</td>
+                    
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white shipment-details-trigger cursor-pointer" data-id="${shipmentId}">
+                        ${shipmentName}
+                        <span class="block text-xs text-gray-400">${date}</span>
+                    </td>
+                    
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${statusDropdown}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300 shipment-details-trigger cursor-pointer" data-id="${shipmentId}">${shipment.entryCount || 0}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300 shipment-details-trigger cursor-pointer" data-id="${shipmentId}">€ ${(shipment.totalPrice || 0).toFixed(2)}</td>
@@ -1974,13 +2224,18 @@ function renderShipmentDetails(shipment, shipmentId) {
     if (shipment.entries && shipment.entries.length > 0) {
         shipment.entries.forEach((entry, index) => {
             entriesTableRows += `
-                <tr class="hover:bg-gray-700 transition-colors duration-150">
+                <tr class="hover:bg-gray-700 transition-colors duration-150 shipment-entry-row">
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">${entry.boxNo || 'N/A'}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${entry.shipperName || 'N/A'}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${entry.receiverName || 'N/A'}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${entry.quantity || 0}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">€ ${(entry.totalCalculatedPrice || 0).toFixed(2)}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-right">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-right space-x-2">
+                        
+                        <button class="edit-past-entry-btn text-blue-400 hover:text-blue-300 p-1" data-shipment-id="${shipmentId}" data-entry-index="${index}" title="Edit Entry">
+                           <i data-lucide="edit-2" class="w-5 h-5 pointer-events-none"></i>
+                        </button>
+                        
                         <button class="view-entry-details-btn text-blue-400 hover:text-blue-300 p-1" data-shipment-id="${shipmentId}" data-entry-index="${index}" title="View Entry Details">
                            <i data-lucide="eye" class="w-5 h-5 pointer-events-none"></i>
                         </button>
@@ -1992,9 +2247,40 @@ function renderShipmentDetails(shipment, shipmentId) {
         entriesTableRows = `<tr><td colspan="6" class="px-6 py-10 text-center text-gray-400">This shipment contains no entries.</td></tr>`;
     }
 
+    // ALUTH FILTER BAR HTML EKA
+    const filterBarHtml = `
+        <div class="bg-gray-800 p-6 rounded-lg shadow-lg mb-6 mt-6">
+            <h3 class="text-lg font-semibold mb-4 text-gray-300">Filter Entries</h3>
+            <div class="grid grid-cols-1 md:grid-cols-6 gap-4 md:items-end">
+                <div>
+                    <label for="filter-shipment-shipperName" class="block text-sm font-medium text-gray-400 mb-1">Search by Shipper</label>
+                    <input type="text" id="filter-shipment-shipperName" placeholder="Enter shipper name..." class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label for="filter-shipment-boxNo" class="block text-sm font-medium text-gray-400 mb-1">Search by Box No</label>
+                    <input type="text" id="filter-shipment-boxNo" placeholder="Enter manual box no..." class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label for="filter-shipment-paymentStatus" class="block text-sm font-medium text-gray-400 mb-1">Payment Status</label>
+                    <select id="filter-shipment-paymentStatus" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="All">All</option>
+                        <option value="Paid">Paid</option>
+                        <option value="Unpaid">Unpaid</option>
+                    </select>
+                </div>
+                <div class="md:col-span-2"></div>
+                <div>
+                    <button id="filter-shipment-clear-btn" class="w-full bg-gray-600 hover:bg-gray-500 text-white font-medium py-2.5 px-4 rounded-lg text-sm transition-colors duration-200">
+                        Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
     const html = `
         <div class="flex justify-between items-center mb-6">
-            <h1 class="text-3xl font-bold">Shipment Details</h1>
+            <h1 class="text-3xl font-bold">Shipment: ${shipment.shipmentName || 'Details'}</h1>
             
             <div class="flex items-center gap-4">
                 <button id="download-shipment-pdf-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-6 rounded-lg transition-colors duration-200 flex items-center space-x-2">
@@ -2020,6 +2306,8 @@ function renderShipmentDetails(shipment, shipmentId) {
                 </div>
             </div>
 
+            ${filterBarHtml}
+
             <div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
                 <h3 class="text-lg font-semibold p-6 text-gray-300">Entries in this Shipment</h3>
                 <div class="overflow-x-auto">
@@ -2031,10 +2319,10 @@ function renderShipmentDetails(shipment, shipmentId) {
                                 <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Receiver</th>
                                 <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Qty</th>
                                 <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Price</th>
-                                <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider w-20">View</th> 
+                                <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider w-28">Actions</th> 
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-700">
+                        <tbody id="shipment-entries-table-body" class="divide-y divide-gray-700">
                             ${entriesTableRows}
                         </tbody>
                     </table>
@@ -2106,6 +2394,7 @@ document.addEventListener('DOMContentLoaded', async () => {
          if (e.target && e.target.id === 'paymentStatus') {
              togglePayingDate();
          }
+         // Note: The 'cbm-price-select' change listener is added in openAddBoxModal
      });
 
 
@@ -2173,9 +2462,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (mainContent) {
         mainContent.addEventListener('submit', (e) => {
-            if (e.target.id === 'price-change-form') {
+            if (e.target.id === 'cbm-price-form') { // <-- New form ID
                 e.preventDefault();
-                handlePriceChange(e);
+                handleCbmPriceSave(e); // <-- New function
             } else if (e.target.id === 'container-change-form') {
                  e.preventDefault();
                 handleContainerChange(e);
@@ -2190,6 +2479,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const backToShippersBtn = target.closest('#back-to-shippers-list-btn');
 
             const deleteContainerBtn = target.closest('.delete-container-btn');
+            const deleteCbmPriceBtn = target.closest('.delete-cbm-price-btn'); // <-- New button
             
             const viewInvoiceBtn = target.closest('.view-invoice-btn');
             const downloadInvoiceBtn = target.closest('.download-invoice-btn');
@@ -2201,7 +2491,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             const backToShipmentsBtn = target.closest('#back-to-shipments-btn');
             const viewShipmentDetailsBtn = target.closest('.view-shipment-details-btn');
             const shipmentDetailsTrigger = target.closest('.shipment-details-trigger');
+            
+            // --- ME DEKA ALUTHIN ADD KALE ---
             const viewEntryDetailsBtn = target.closest('.view-entry-details-btn');
+            const editPastEntryBtn = target.closest('.edit-past-entry-btn');
+            const clearShipmentFilterBtn = target.closest('#filter-shipment-clear-btn');
+            // --- IWARAI ---
 
 
             if (viewShipperShipmentsBtn) {
@@ -2226,6 +2521,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if(docId) handleDeleteContainer(docId);
                 return;
             }
+
+            // --- New block for deleting a CBM price ---
+            if (deleteCbmPriceBtn) {
+                e.preventDefault(); e.stopPropagation();
+                const docId = deleteCbmPriceBtn.dataset.id;
+                if(docId) handleDeleteCbmPrice(docId); // <-- New function
+                return;
+            }
+            // --- End of new block ---
 
             if (viewInvoiceBtn) {
                 e.preventDefault(); e.stopPropagation();
@@ -2259,6 +2563,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
             
+            // --- ME BLOCK EKA ALUTHIN ADD KALE ---
+            if (editPastEntryBtn) {
+                 e.preventDefault(); e.stopPropagation();
+                 const shipmentId = editPastEntryBtn.dataset.shipmentId;
+                 const entryIndex = editPastEntryBtn.dataset.entryIndex;
+                 
+                 if (shipmentId && entryIndex !== undefined) {
+                    handleEditPastEntry(shipmentId, entryIndex);
+                 }
+                 return;
+            }
+            // --- IWARAI ---
+
             if (viewEntryDetailsBtn) {
                  e.preventDefault(); e.stopPropagation();
                  const shipmentId = viewEntryDetailsBtn.dataset.shipmentId;
@@ -2308,6 +2625,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
 
+            // --- MEKA ALUTHIN ADD KALE ---
+            if (clearShipmentFilterBtn) {
+                const nameFilter = document.getElementById('filter-shipment-shipperName');
+                const boxNoFilter = document.getElementById('filter-shipment-boxNo');
+                const statusFilter = document.getElementById('filter-shipment-paymentStatus');
+                
+                if (nameFilter) nameFilter.value = '';
+                if (boxNoFilter) boxNoFilter.value = '';
+                if (statusFilter) statusFilter.value = 'All';
+                
+                filterShipmentEntriesTable();
+            }
+            // --- IWARAI ---
 
              if (viewDetailsTrigger) {
                  const actionCell = target.closest('.action-cell');
@@ -2322,6 +2652,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         });
 
+        // --- ME EVENT LISTENERS DEKA ALUTHIN ADD KALE ---
+        // Shipment details page eke filter walata
+        mainContent.addEventListener('keyup', (e) => {
+            if (e.target.id === 'filter-shipment-shipperName' || e.target.id === 'filter-shipment-boxNo') {
+                filterShipmentEntriesTable();
+            }
+        });
+        
         mainContent.addEventListener('change', (e) => {
             const target = e.target;
             
@@ -2335,7 +2673,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
                 return;
             }
+            
+            // Aluth filter ekata
+             if (e.target.id === 'filter-shipment-paymentStatus') {
+                // Note: Payment status filter eka weda karanna data naha, eth function eka call karamu
+                filterShipmentEntriesTable();
+            }
         });
+        // --- IWARAI ---
+
     } else {
          console.error("CRITICAL: Main content element (#main-content) not found during initialization!");
     }
@@ -2359,7 +2705,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (loginContainer) loginContainer.style.display = 'none';
                 if (appContainer) appContainer.style.display = 'flex';
 
-                await loadCurrentPrice();
+                await loadCbmPrices(); // <-- New function
 
                 loadShippersForAutofill();
 
@@ -2374,7 +2720,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (userIdSpan) userIdSpan.innerText = 'Not Logged In';
 
                 allShippersData = [];
-                currentCBMPrice = 0;
+                legacyCBMPrice = 0; // <-- New variable
             }
         });
 
@@ -2821,4 +3167,106 @@ async function handleEditTransaction(docId) {
         console.error("Error fetching transaction for edit: ", error);
         customAlert('Error', `Failed to load data: ${error.message}`);
     }
+}
+
+// --- ALUTH FUNCTION 1 ---
+// Past Shipment eka athule entry ekak edit karanna modal eka open karana eka
+async function handleEditPastEntry(shipmentId, entryIndex) {
+    if (!db) return customAlert('Error', 'Database not connected.');
+    
+    customAlert('Loading...', 'Loading entry data for editing...');
+    const alertModal = document.getElementById('custom-alert-modal');
+
+    try {
+        const docRef = doc(db, `artifacts/${appId}/public/data/shipments`, shipmentId);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            const shipment = docSnap.data();
+            const entryData = shipment.entries[parseInt(entryIndex)];
+            
+            if (entryData) {
+                // Form eka populate karanava
+                populateEditForm(entryData);
+                
+                // Modal eke hidden fields set karanava
+                document.getElementById('editDocId').value = ''; // Parana ek aclear karanava
+                document.getElementById('editShipmentId').value = shipmentId;
+                document.getElementById('editShipmentIndex').value = entryIndex;
+                
+                // Modal eka open karanava
+                openAddBoxModal(true);
+                
+                if(alertModal) alertModal.style.display = 'none';
+            } else {
+                if(alertModal) alertModal.style.display = 'none';
+                customAlert('Error', 'Could not find entry data in shipment.');
+            }
+        } else {
+             if(alertModal) alertModal.style.display = 'none';
+             customAlert('Error', 'Shipment data not found.');
+        }
+    } catch (err) {
+        console.error("Error fetching entry from shipment for edit:", err);
+        if(alertModal) alertModal.style.display = 'none';
+        customAlert('Error', 'Failed to load entry details for editing.');
+    }
+}
+
+// --- ALUTH FUNCTION 2 ---
+// Shipment Details page eke entries table eka filter karana eka
+function filterShipmentEntriesTable() {
+    const nameFilterInput = document.getElementById('filter-shipment-shipperName');
+    const boxNoFilterInput = document.getElementById('filter-shipment-boxNo');
+    const statusFilterInput = document.getElementById('filter-shipment-paymentStatus');
+
+    const nameFilter = nameFilterInput ? nameFilterInput.value.toLowerCase() : '';
+    const boxNoFilter = boxNoFilterInput ? boxNoFilterInput.value.toLowerCase() : '';
+    const statusFilter = statusFilterInput ? statusFilterInput.value : 'All';
+
+    const tableBody = document.getElementById('shipment-entries-table-body');
+    if (!tableBody) return;
+    const rows = tableBody.querySelectorAll('.shipment-entry-row');
+    let hasVisibleRows = false;
+
+    for (const row of rows) {
+        if (row.cells.length < 6) continue;
+
+        const boxNoCell = row.cells[0];
+        const shipperCell = row.cells[1];
+        // Status eka ganna api data eka save karala naha table eke,
+        // E nisa me filter eka danata weda karanne nehe.
+        // Hadatai puluwan, eth danata mehema thiyam.
+        
+        // **Update:** Status eka nathi nisa, api eka ain karamu.
+        
+        const boxNo = boxNoCell.innerText.toLowerCase();
+        const shipper = shipperCell.innerText.toLowerCase();
+        
+        const nameMatch = shipper.includes(nameFilter);
+        const boxNoMatch = boxNo.includes(boxNoFilter);
+        // const statusMatch = (statusFilter === 'All'); // Status danata filter karanne ne
+
+        if (nameMatch && boxNoMatch) {
+            row.style.display = '';
+            hasVisibleRows = true;
+        } else {
+            row.style.display = 'none';
+        }
+    }
+
+     let noResultsRow = tableBody.querySelector('.no-results-row');
+     
+     if (!hasVisibleRows) {
+         if (!noResultsRow) {
+             const tr = document.createElement('tr');
+             tr.className = 'no-results-row';
+             tr.innerHTML = `<td colspan="6" class="px-6 py-10 text-center text-gray-400">No matching entries found.</td>`;
+             tableBody.appendChild(tr);
+         } else {
+             noResultsRow.style.display = '';
+         }
+     } else if (noResultsRow) {
+         noResultsRow.style.display = 'none';
+     }
 }

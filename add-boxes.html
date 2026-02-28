@@ -37,8 +37,9 @@
         </div>
     </div>
 </div>
+
 <div class="bg-gray-800 p-6 rounded-lg shadow-lg mb-6">
-    <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-6 gap-4 md:items-end">
         <div>
             <label for="filterCustomerName" class="block text-sm font-medium text-gray-400 mb-1">Search by Shipper Name</label>
             <input type="text" id="filterCustomerName" placeholder="Enter shipper name..." class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -63,7 +64,7 @@
             <label for="filterPayingDate" class="block text-sm font-medium text-gray-400 mb-1">Filter by Paying Date</label>
             <input type="date" id="filterPayingDate" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" style="color-scheme: dark;">
         </div>
-        <div class="self-end">
+        <div>
             <button id="filterClearBtn" class="w-full bg-gray-600 hover:bg-gray-500 text-white font-medium py-2.5 px-4 rounded-lg text-sm transition-colors duration-200">
                 Clear
             </button>
@@ -93,4 +94,4 @@
             </tbody>
         </table>
     </div>
-</div>
+</div>   

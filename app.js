@@ -320,6 +320,11 @@ const addNewBoxRow = (boxData = null, index = null) => {
     const lengthInput = row.querySelector('.box-length');
     const widthInput = row.querySelector('.box-width');
     const heightInput = row.querySelector('.box-height');
+    // addNewBoxRow ඇතුළේ boxData check කරන තැනට මේක දාන්න
+const weightInput = row.querySelector('.box-weight');
+if (boxData && weightInput) {
+    weightInput.value = boxData.weight || '';
+}
     const priceDisplay = row.querySelector('.box-calculated-price');
 
     // Get the *currently selected* CBM price from the dropdown for calculation
@@ -516,6 +521,7 @@ const populateEditForm = (boxData) => {
     form.quantity.value = boxData.quantity || 1;
     form.shipperName.value = boxData.shipperName || '';
     form.shipperEmail.value = boxData.shipperEmail || '';
+    form.shipperPhone.value = boxData.shipperPhone || '';
     form.shipperCity.value = boxData.shipperCity || '';
     form.receiverName.value = boxData.receiverName || '';
     form.receiverPhone.value = boxData.receiverPhone || '';
@@ -855,206 +861,99 @@ async function handleAddBox(e) {
     const form = e.target;
     const messageDiv = document.getElementById('form-message');
     
-    // --- ME TIKA WENAS KALE ---
     const editDocId = document.getElementById('editDocId').value;
     const editShipmentId = document.getElementById('editShipmentId').value;
     const editShipmentIndex = document.getElementById('editShipmentIndex').value;
-    // --- WENAS KAMA IWARAI ---
 
+    const idPhotoBase64 = document.getElementById('shipperIdPhoto')?.value || ""; 
+    let driveUrl = "";
 
-    const otherObjects = [];
-    document.querySelectorAll('#other-objects-list .object-row:not([style*="display: none"])').forEach(row => {
-        const nameInput = row.querySelector('.object-name');
-        const priceInput = row.querySelector('.object-price');
-        if (nameInput && priceInput) {
-            const name = nameInput.value.trim();
-            const price = parseFloat(priceInput.value) || 0;
-            if (name && price >= 0) {
-                otherObjects.push({ name, price });
-            }
+    if (idPhotoBase64 && !editDocId && !editShipmentId) {
+        customAlert("Uploading...", "Sending ID photo to Google Drive. Please wait...");
+        try {
+            const response = await fetch("https://script.google.com/macros/s/AKfycbxt_0FnO1-u_spz_LpcXkwPvTVzAhFj21CXynBQUB0hJh7WJE1qf_jm8SyPRkJvbj8/exec", {
+                method: "POST",
+                body: JSON.stringify({
+                    image: idPhotoBase64,
+                    name: "ID_" + form.boxNo.value + "_" + new Date().getTime() + ".jpg"
+                })
+            });
+            const result = await response.json();
+            driveUrl = result.url || "";
+        } catch (err) {
+            console.error("Drive Upload Error:", err);
         }
-    });
+    }
 
     const boxes = [];
     document.querySelectorAll('#box-details-list .box-row:not([style*="display: none"])').forEach(row => {
         const length = parseFloat(row.querySelector('.box-length').value) || 0;
         const width = parseFloat(row.querySelector('.box-width').value) || 0;
         const height = parseFloat(row.querySelector('.box-height').value) || 0;
+        const weight = parseFloat(row.querySelector('.box-weight')?.value) || 0;
         if (length > 0 && width > 0 && height > 0) {
-            boxes.push({ length, width, height });
+            boxes.push({ length, width, height, weight });
         }
     });
 
-    const subtotalPrice = (document.getElementById('calculated-subtotal-price')?.innerText || '€ 0.00')
-                            .replace('€ ', '');
-    const discountPrice = (document.getElementById('discountPrice')?.value || 0);
-
     const calculatedTotalPrice = calculateTotalPrice();
-
-    const paymentStatus = form.paymentStatus.value;
-    const payingDate = form.payingDate.value;
-
-    // Get the selected CBM price details
     const priceSelect = document.getElementById('cbm-price-select');
-    const selectedPriceValue = priceSelect ? (parseFloat(priceSelect.value) || 0) : 0;
-    const selectedPriceName = priceSelect ? (priceSelect.options[priceSelect.selectedIndex]?.text || 'N/A') : 'N/A';
 
     const boxData = {
         boxNo: form.boxNo.value.trim(),
         quantity: parseInt(form.quantity.value) || 1,
         shipperName: form.shipperName.value.trim(),
         shipperEmail: form.shipperEmail.value.toLowerCase().trim(),
+        shipperPhone: form.shipperPhone?.value.trim() || '',
         shipperCity: form.shipperCity.value.trim(),
         receiverName: form.receiverName.value.trim(),
         receiverPhone: form.receiverPhone.value.trim(),
         receiverAddress: form.receiverAddress.value.trim(),
         notes: form.boxNotes.value.trim(),
-        otherObjects: otherObjects,
         boxes: boxes,
-        
-        subtotalPrice: parseFloat(subtotalPrice),
-        discountAmount: parseFloat(discountPrice),
+        shipperIdPhotoUrl: driveUrl,
         totalCalculatedPrice: calculatedTotalPrice,
-
-        // Save the CBM price details
-        cbmPriceUsed: selectedPriceValue,
-        cbmPriceName: selectedPriceName, 
-        
-        paymentStatus: paymentStatus,
-        payingDate: (paymentStatus === 'Unpaid' && payingDate) ? payingDate : null, 
+        paymentStatus: form.paymentStatus.value,
+        payingDate: form.payingDate.value || null,
         addedBy: userId || 'unknown',
         lastUpdatedAt: Timestamp.fromDate(new Date())
     };
 
-    if (!editDocId && !editShipmentId) { // Aluth entry ekak nam vitharak
+    if (!editDocId && !editShipmentId) {
         boxData.addedAt = Timestamp.fromDate(new Date());
     }
 
-    if (!boxData.boxNo || !boxData.shipperName || !boxData.shipperEmail || !boxData.receiverName || !boxData.receiverPhone || !boxData.receiverAddress) {
-         customAlert('Validation Error', 'Please fill in all required fields (Box No, Shipper Name/Email, Receiver Name/Phone/Address).');
-         return;
-    }
-
-    // Check if CBM price is selected
-    if (selectedPriceValue <= 0) {
-        customAlert('Validation Error', 'Please select a valid CBM Price from the dropdown.');
-        return;
-    }
-
-
     try {
-        if (editShipmentId && editShipmentIndex !== undefined) {
-            // === LOGIC FOR PAST SHIPMENT EDIT ===
-            console.log(`Updating entry ${editShipmentIndex} in shipment ${editShipmentId}`);
-            
+        if (editShipmentId) {
             const shipmentDocRef = doc(db, `artifacts/${appId}/public/data/shipments`, editShipmentId);
             const docSnap = await getDoc(shipmentDocRef);
-            
-            if (!docSnap.exists()) {
-                throw new Error("Shipment document not found. Could not update entry.");
-            }
-
-            const shipmentData = docSnap.data();
-            let entries = shipmentData.entries || [];
-            const index = parseInt(editShipmentIndex);
-            const originalEntry = entries[index] || {};
-            
-            // Update the entry in the array
-            // 'addedAt' vage parana fields preserve karanava
-            entries[index] = { 
-                ...originalEntry, // Parana details
-                ...boxData        // Aluth details (form eken)
-            }; 
-
-            // Shipment eke total price eka ayeth calculate karanava
-            let newTotalPrice = 0;
-            entries.forEach(entry => {
-                newTotalPrice += entry.totalCalculatedPrice || 0;
-            });
-
-            // Shipment document eka update karanava
-            await setDoc(shipmentDocRef, {
-                entries: entries,
-                totalPrice: newTotalPrice,
-                lastUpdatedAt: Timestamp.fromDate(new Date())
-            }, { merge: true });
-
-            if (messageDiv) messageDiv.innerText = 'Entry updated successfully in shipment!';
-            closeAddBoxModal();
-            
-            // Details page eka refresh karanava
-            const updatedShipmentData = { ...shipmentData, entries: entries, totalPrice: newTotalPrice, lastUpdatedAt: Timestamp.fromDate(new Date()) };
-            renderShipmentDetails(updatedShipmentData, editShipmentId);
-            if (window.setupShipmentPDF) {
-                window.setupShipmentPDF(editShipmentId, updatedShipmentData);
-            }
-            
+            let entries = docSnap.data().entries || [];
+            entries[parseInt(editShipmentIndex)] = { ...entries[parseInt(editShipmentIndex)], ...boxData };
+            await setDoc(shipmentDocRef, { entries: entries }, { merge: true });
+        } else if (editDocId) {
+            await setDoc(doc(db, `artifacts/${appId}/public/data/boxes`, editDocId), boxData, { merge: true });
         } else {
-            // === LOGIC FOR NEW OR LIVE-EDIT ENTRY ===
-            const shipperId = boxData.shipperEmail;
-            const receiverPhone = boxData.receiverPhone;
-
-            if (editDocId) {
-                // --- This is a LIVE EDIT ---
-                console.log("Updating document:", editDocId);
-                const boxDocRef = doc(db, `artifacts/${appId}/public/data/boxes`, editDocId);
-                await setDoc(boxDocRef, boxData, { merge: true });
-
-                const shipperRef = doc(db, `artifacts/${appId}/public/data/shippers`, shipperId);
-                await setDoc(shipperRef, { name: boxData.shipperName, email: shipperId, city: boxData.shipperCity }, { merge: true });
-
-                const receiverRef = doc(db, `artifacts/${appId}/public/data/shippers/${shipperId}/receivers`, receiverPhone);
-                await setDoc(receiverRef, { name: boxData.receiverName, address: boxData.receiverAddress, phone: receiverPhone }, { merge: true });
-
-                const shipperBoxRef = doc(db, `artifacts/${appId}/public/data/shippers/${shipperId}/shipment_entries`, editDocId);
-                await setDoc(shipperBoxRef, {
-                    boxNo: boxData.boxNo,
-                    addedAt: boxData.lastUpdatedAt,
-                    totalPrice: boxData.totalCalculatedPrice
-                }, { merge: true });
-                
-                if(messageDiv) messageDiv.innerText = 'Entry updated successfully!';
-
-            } else {
-                // --- This is a NEW ENTRY ---
-                console.log("Adding new document...");
-                const boxesCollectionRef = collection(db, `artifacts/${appId}/public/data/boxes`);
-                const docRef = await addDoc(boxesCollectionRef, boxData);
-                const newBoxId = docRef.id;
-
-                const shipperRef = doc(db, `artifacts/${appId}/public/data/shippers`, shipperId);
-                await setDoc(shipperRef, { name: boxData.shipperName, email: shipperId, city: boxData.shipperCity, shipmentCount: increment(1) }, { merge: true });
-
-                const receiverRef = doc(db, `artifacts/${appId}/public/data/shippers/${shipperId}/receivers`, receiverPhone);
-                await setDoc(receiverRef, { name: boxData.receiverName, address: boxData.receiverAddress, phone: receiverPhone }, { merge: true });
-
-                const shipperBoxRef = doc(db, `artifacts/${appId}/public/data/shippers/${shipperId}/shipment_entries`, newBoxId);
-                await setDoc(shipperBoxRef, {
-                    boxNo: boxData.boxNo,
-                    addedAt: boxData.addedAt,
-                    totalPrice: boxData.totalCalculatedPrice
-                });
-                
-                if(messageDiv) messageDiv.innerText = 'Entry added successfully!';
-            }
-            
-            if(messageDiv) messageDiv.className = 'mt-4 text-center text-green-400';
-            closeAddBoxModal();
+            await addDoc(collection(db, `artifacts/${appId}/public/data/boxes`), boxData);
         }
 
+        if (messageDiv) {
+            messageDiv.innerText = 'Entry saved successfully!';
+            messageDiv.className = 'mt-4 text-center text-green-400';
+        }
+        closeAddBoxModal();
     } catch (error) {
         console.error("Error saving document: ", error);
-        if(messageDiv) {
-            messageDiv.innerText = `Error ${editDocId ? 'updating' : 'adding'} entry. Please try again.`;
+        if (messageDiv) {
+            messageDiv.innerText = `Error saving entry. Please try again.`;
             messageDiv.className = 'mt-4 text-center text-red-400';
         }
-        customAlert('Save Error', `Failed to ${editDocId ? 'update' : 'add'} entry: ${error.message}`);
     }
 
     setTimeout(() => {
-        if(messageDiv) messageDiv.innerText = '';
+        if (messageDiv) messageDiv.innerText = '';
     }, 4000);
-}
+} // <--- Me bracket eka thama oyage code eke adu wela thibbe.
+
 
 async function loadDashboardCardStats() {
     if (!db) return;
@@ -3270,3 +3169,58 @@ function filterShipmentEntriesTable() {
          noResultsRow.style.display = 'none';
      }
 }
+const setupCamera = () => {
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const photoPreview = document.getElementById('photo-preview');
+    const startBtn = document.getElementById('start-camera-btn');
+    const captureBtn = document.getElementById('capture-photo-btn');
+    const retakeBtn = document.getElementById('retake-photo-btn');
+    const photoInput = document.getElementById('shipperIdPhoto');
+
+    if (!video || !startBtn) return; // Element nathi nam exit wenawa
+
+    startBtn.onclick = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: "environment" } 
+            });
+            video.srcObject = stream;
+            video.classList.remove('hidden');
+            photoPreview.classList.add('hidden');
+            startBtn.classList.add('hidden');
+            captureBtn.classList.remove('hidden');
+            window.currentCameraStream = stream; // Stream eka save karagannawa nawathwannna
+        } catch (err) {
+            console.error("Camera Error:", err);
+            customAlert('Camera Error', 'Could not access camera. Please check browser permissions.');
+        }
+    };
+
+    captureBtn.onclick = () => {
+        const context = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        const imageData = canvas.toDataURL('image/jpeg');
+        if (photoInput) photoInput.value = imageData;
+        
+        if (photoPreview) {
+            photoPreview.src = imageData;
+            photoPreview.classList.remove('hidden');
+        }
+        video.classList.add('hidden');
+        captureBtn.classList.add('hidden');
+        retakeBtn.classList.remove('hidden');
+        
+        if (window.currentCameraStream) {
+            window.currentCameraStream.getTracks().forEach(track => track.stop());
+        }
+    };
+
+    retakeBtn.onclick = () => {
+        retakeBtn.classList.add('hidden');
+        startBtn.click();
+    };
+};

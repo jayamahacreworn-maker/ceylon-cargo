@@ -871,7 +871,7 @@ async function handleAddBox(e) {
     if (idPhotoBase64 && !editDocId && !editShipmentId) {
         customAlert("Uploading...", "Sending ID photo to Google Drive. Please wait...");
         try {
-            const response = await fetch("https://script.google.com/macros/s/AKfycbxt_0FnO1-u_spz_LpcXkwPvTVzAhFj21CXynBQUB0hJh7WJE1qf_jm8SyPRkJvbj8/exec", {
+            const response = await fetch("https://script.google.com/macros/s/AKfycbyGo5B_EXcqM2HfBWMppmco_dTRwEwWRhyJpMQs69K6Alqd3XVOqE1B2rcj06uGD6E/exec", {
                 method: "POST",
                 body: JSON.stringify({
                     image: idPhotoBase64,

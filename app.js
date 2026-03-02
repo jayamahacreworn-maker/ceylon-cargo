@@ -3169,6 +3169,7 @@ function filterShipmentEntriesTable() {
          noResultsRow.style.display = 'none';
      }
 }
+// app.js anthima hariyata meeka danna
 const setupCamera = () => {
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
@@ -3178,7 +3179,7 @@ const setupCamera = () => {
     const retakeBtn = document.getElementById('retake-photo-btn');
     const photoInput = document.getElementById('shipperIdPhoto');
 
-    if (!video || !startBtn) return; // Element nathi nam exit wenawa
+    if (!video || !startBtn) return;
 
     startBtn.onclick = async () => {
         try {
@@ -3190,7 +3191,7 @@ const setupCamera = () => {
             photoPreview.classList.add('hidden');
             startBtn.classList.add('hidden');
             captureBtn.classList.remove('hidden');
-            window.currentCameraStream = stream; // Stream eka save karagannawa nawathwannna
+            window.currentCameraStream = stream;
         } catch (err) {
             console.error("Camera Error:", err);
             customAlert('Camera Error', 'Could not access camera. Please check browser permissions.');
@@ -3224,3 +3225,7 @@ const setupCamera = () => {
         startBtn.click();
     };
 };
+
+// Modal eka open weddi setupCamera call karanna ona
+// Danata app.js eke thiyena openAddBoxModal function eka athule 
+// anthima hariyata setupCamera(); kiyala danna.

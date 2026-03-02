@@ -453,6 +453,12 @@ const openAddBoxModal = (isEditing = false) => {
     } else {
         console.error("Add/Edit Modal essential elements not found!");
     }
+    const openAddBoxModal = (isEditing = false) => {
+    // ... anith code tika ...
+    
+    // Anthima hariyata meeka danna
+    setupCamera(); 
+};
 };
 
 const handleModalInputChange = (e) => {
@@ -3169,14 +3175,13 @@ function filterShipmentEntriesTable() {
          noResultsRow.style.display = 'none';
      }
 }
-// app.js anthima hariyata meeka danna
 const setupCamera = () => {
     const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
-    const photoPreview = document.getElementById('photo-preview');
     const startBtn = document.getElementById('start-camera-btn');
     const captureBtn = document.getElementById('capture-photo-btn');
     const retakeBtn = document.getElementById('retake-photo-btn');
+    const photoPreview = document.getElementById('photo-preview');
+    const canvas = document.getElementById('canvas');
     const photoInput = document.getElementById('shipperIdPhoto');
 
     if (!video || !startBtn) return;
@@ -3194,7 +3199,7 @@ const setupCamera = () => {
             window.currentCameraStream = stream;
         } catch (err) {
             console.error("Camera Error:", err);
-            customAlert('Camera Error', 'Could not access camera. Please check browser permissions.');
+            customAlert('Camera Error', 'Could not access camera.');
         }
     };
 
@@ -3205,12 +3210,10 @@ const setupCamera = () => {
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         
         const imageData = canvas.toDataURL('image/jpeg');
-        if (photoInput) photoInput.value = imageData;
+        photoInput.value = imageData;
         
-        if (photoPreview) {
-            photoPreview.src = imageData;
-            photoPreview.classList.remove('hidden');
-        }
+        photoPreview.src = imageData;
+        photoPreview.classList.remove('hidden');
         video.classList.add('hidden');
         captureBtn.classList.add('hidden');
         retakeBtn.classList.remove('hidden');
@@ -3225,7 +3228,3 @@ const setupCamera = () => {
         startBtn.click();
     };
 };
-
-// Modal eka open weddi setupCamera call karanna ona
-// Danata app.js eke thiyena openAddBoxModal function eka athule 
-// anthima hariyata setupCamera(); kiyala danna.

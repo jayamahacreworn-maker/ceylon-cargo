@@ -394,6 +394,7 @@ const togglePayingDate = () => {
 
 const openAddBoxModal = (isEditing = false) => {
     const modal = document.getElementById('add-box-modal');
+    // ... anith code tika ...
     const titleEl = document.getElementById('add-edit-modal-title');
     const submitBtn = document.getElementById('add-edit-submit-btn');
     const form = document.getElementById('add-box-form');
@@ -453,13 +454,14 @@ const openAddBoxModal = (isEditing = false) => {
     } else {
         console.error("Add/Edit Modal essential elements not found!");
     }
-    const openAddBoxModal = (isEditing = false) => {
-    // ... anith code tika ...
-    
-    // Anthima hariyata meeka danna
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    // MEKA ANTHIMATA ADD KARANNA
     setupCamera(); 
-};
-};
+}; 
+
+
 
 const handleModalInputChange = (e) => {
     if (e.target && (e.target.matches('.box-dimension') || e.target.matches('.object-price') || e.target.id === 'discountPrice')) {
